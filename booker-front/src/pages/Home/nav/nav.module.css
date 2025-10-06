@@ -1,0 +1,22 @@
+.nav_container {
+    display: flex;
+    flex-flow: row wrap;
+    text-align: center;
+    justify-content: space-between;
+    align-items: center;
+    background-color: blue;
+    width: 100%;
+    gap: 20px;
+}
+
+.left_block {
+}
+
+.middle_block {
+    width: 500px;
+    margin: 0px;
+    border: 1px solid red;
+}
+
+.right_block {
+}

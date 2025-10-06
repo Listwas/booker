@@ -1,3 +1,5 @@
+import Nav from './nav/Nav.tsx'
+import BookFeed from './bookfeed/BookFeed.tsx'
 import s from './home.module.css'
 
 function Home() {
@@ -5,12 +7,8 @@ function Home() {
         <>
             <main className={s.main}>
                 <div className={s.main_block}>
-                    <h1>asd</h1>
-                    <h1>asd</h1>
-                    <h1>asd</h1>
-                    <h1>asd</h1>
-                    <h1>asd</h1>
-                    <p>12</p>
+                    <Nav />
+                    <BookFeed />
                 </div>
             </main>
         </>

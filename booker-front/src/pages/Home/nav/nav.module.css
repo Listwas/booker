@@ -4,18 +4,19 @@
     text-align: center;
     justify-content: space-between;
     align-items: center;
-    background-color: blue;
+    background-color: #ccccff;
     width: 100%;
     gap: 20px;
+    height: 6vh;
+    border-radius: 10px 10px 0 0;
 }
 
 .left_block {
 }
 
 .middle_block {
-    width: 500px;
+    width: 450px;
     margin: 0px;
-    border: 1px solid red;
 }
 
 .right_block {

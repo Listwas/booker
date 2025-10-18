@@ -1,9 +1,13 @@
-import { useState } from 'react';
-import booksData from "./books.json";
-
+import {useEffect, useState } from 'react';
 
 function BookFeed() {
-  const [books, setBooks] = useState(booksData);
+    const [books, setBooks] = useState([]);
+
+    useEffect(() => {
+        fetch("http://localhost:8000/books")
+            .then(res => res.json())
+            .then(data => setBooks(data));
+    }, []);
 
   return (
     <div>

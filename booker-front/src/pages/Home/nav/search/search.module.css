@@ -1,34 +1,22 @@
 .search_container {
     display:flex;
-    width: 100%;
-    align-items: start;
-    justify-content: start;
-}
-
-.icon {
-    cursor: pointer;
-    transition: 0.2s ease;
-}
-
-.icon:hover {
-    transform: scale(1.1);
+    justify-content: center;
+    align-items: center;
+    padding-right: 25px;
+    margin-top: 10px;
 }
 
 .search {
-  height: 26px;
-  width: 200px;
-  border: 1px solid #ccc;
-  border-radius: 14px;
-  padding: 5px;
-  outline: none;
-  transition: all 0.3s ease;
-  cursor: pointer;
+    background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='33' height='37' viewBox='0 0 33 37' fill='none'><circle cx='12.5' cy='12.5' r='10' transform='matrix(-1 0 0 1 25 0)' stroke='black' stroke-width='5'/><line x1='29.4784' y1='33.6864' x2='18.8723' y2='21.0065' stroke='black' stroke-width='5' stroke-linecap='round'/></svg>") no-repeat 10px center; 
+    background-color: #FFFFFF;
+    background-size: 22px;
+
+    width: 244px - 50px;
+    height: 34px;
+    border: 1px solid #FFFFFF;
+    border-radius: 15px;
+    outline: none;
+    cursor: pointer;
+    padding-left: 50px;
 
 }
-
-.search:focus, .search:hover{
-  width: 100%;
-  border-radius: 4px;
-  cursor: text;
-}
-

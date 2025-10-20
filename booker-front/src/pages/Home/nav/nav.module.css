@@ -1,23 +1,34 @@
 .nav_container {
     display: flex;
-    flex-flow: row wrap;
+    flex-flow: row nowrap;
     text-align: center;
-    justify-content: space-between;
     align-items: center;
-    background-color: #ccccff;
+    justify-content: space-between;
+    background-color: #121212;
     width: 100%;
-    gap: 20px;
-    height: 6vh;
+    max-width: 1060px;
+    height: 88px;
     border-radius: 10px 10px 0 0;
 }
 
-.left_block {
+.left_block a{
+    color: #E1EBF4;
+    padding-left: 25px;
+    font-size: 2.5rem;
+    font-weight: 900;
+    text-decoration: none;
+    cursor: pointer;
 }
 
+
 .middle_block {
-    width: 450px;
-    margin: 0px;
+    display: flex;
+    color: #FFFFFF;
+    font-size: 1.5rem;
+    margin-top: 10px;
+    gap: 25px;
 }
 
 .right_block {
+    /* ./search/search.module.css */
 }

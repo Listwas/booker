@@ -1,6 +1,5 @@
 import Search from './search/Search.tsx'
 import LogoBox from './logobox/LogoBox.tsx'
-import DropDownMenu from './drop-down-menu/DropDownMenu.tsx'
 import s from './nav.module.css'
 
 function Nav() {
@@ -12,11 +11,15 @@ function Nav() {
                 </div>
 
                 <div className={s.middle_block}>
-                    <Search />
+                    <p>List</p>
+                    <p>Profile</p>
+                    <p>Friends</p>
+                    <p>My reviews</p>
+                    <p>Settings</p>
                 </div>
 
                 <div className={s.right_block}> 
-                    <DropDownMenu />
+                    <Search />
                 </div>
             </div>
 

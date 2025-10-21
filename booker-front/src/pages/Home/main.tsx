@@ -6,9 +6,11 @@ function Home() {
     return ( 
         <>
             <main className={s.main}>
-                <div className={s.main_block}>
+                <div>
                     <Nav />
-                    <BookFeed />
+                    <div className={s.main_block} >
+                        <BookFeed />
+                    </div>
                 </div>
             </main>
         </>

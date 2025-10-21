@@ -2,8 +2,7 @@
     display:flex;
     justify-content: center;
     align-items: center;
-    padding-right: 25px;
-    margin-top: 10px;
+    margin: 10px 25px 0px 3vw; 
 }
 
 .search {

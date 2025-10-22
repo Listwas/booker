@@ -1,5 +1,5 @@
-import Search from './search/Search.tsx'
-import LogoBox from './logobox/LogoBox.tsx'
+import Search from './Search.tsx'
+import LogoBox from './LogoBox.tsx'
 import s from './nav.module.css'
 
 function Nav() {

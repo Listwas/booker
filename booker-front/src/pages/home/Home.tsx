@@ -1,5 +1,5 @@
-import Nav from './nav/Nav.tsx'
-import BookFeed from './bookfeed/BookFeed.tsx'
+import Nav from './components/nav/Nav.tsx'
+import BookFeed from './components/bookfeed/BookFeed.tsx'
 import s from './home.module.css'
 
 function Home() {

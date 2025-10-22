@@ -1,0 +1,8 @@
+.logo_text {
+    color: var(--bg-dark-text);
+    margin: 0px 3vw 0px 25px;
+    font-size: 2.5rem;
+    font-weight: 900;
+    text-decoration: none;
+    cursor: pointer;
+}

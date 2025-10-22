@@ -10,16 +10,6 @@
     border-radius: 10px 10px 0 0;
 }
 
-.left_block a{
-    color: var(--bg-dark-text);
-    margin: 0px 3vw 0px 25px;
-    font-size: 2.5rem;
-    font-weight: 900;
-    text-decoration: none;
-    cursor: pointer;
-}
-
-
 .middle_block {
     display: flex;
     flex-wrap: nowrap;

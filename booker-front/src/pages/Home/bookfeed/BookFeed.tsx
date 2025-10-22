@@ -1,4 +1,6 @@
 import {useEffect, useState } from 'react';
+import styles from './bookfeed.module.css';
+import BookCard from './BookCard.jsx';
 
 function BookFeed() {
     const [books, setBooks] = useState([]);
@@ -13,13 +15,12 @@ function BookFeed() {
     }, []);
 
   return (
-    <div>
-      <h2>Book Feed</h2>
-      {books.map((books, index) => (
-        <div key={index}>
-          <strong>{books.title}</strong> — {books.author}
+    <div className={styles.main_block}>
+        <h2>Fiction</h2>
+        <div className={styles.book_cards_container}>
+            <BookCard />
+            
         </div>
-      ))}
     </div>
   );
 }

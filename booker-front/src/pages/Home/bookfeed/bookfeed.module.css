@@ -1,0 +1,22 @@
+.main_block {
+    display: flex;
+    justify-content: start;
+    align-items: start;
+    flex-flow: column nowrap;
+    color: white;
+}
+
+.main_block h2 {
+    margin: 15px 0px 15px 15px;
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--bg-black-text)
+}
+
+.book_cards_container {
+    display: flex;
+    border: 1px solid blue;
+    width: 160px;
+    height: 240px;
+    margin-left: 15px;
+}

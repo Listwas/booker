@@ -10,6 +10,10 @@
     border-radius: 10px 10px 0 0;
 }
 
+.left_block {
+    /* ./logobox.module.css */
+}
+
 .middle_block {
     display: flex;
     flex-wrap: nowrap;
@@ -22,7 +26,7 @@
 }
 
 .right_block {
-    /* ./search/search.module.css */
+    /* ./search.module.css */
 }
 
 @media (min-width: 2560px) {

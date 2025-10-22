@@ -18,6 +18,8 @@
     --bg-light-text-secondary: hsl(0, 0%, 30%);
 
     --star-rating: hsl(47, 92%, 53%);
+
+    background-color: var(--bg-dark-high)
 }
 
 

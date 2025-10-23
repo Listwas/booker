@@ -1,12 +1,12 @@
 import styles from './bookcard.module.css';
 
-function BookCard() {
+function BookCard({ title, author, cover }) {
 
     return(
         <>    
             <div className={styles.bookcard_container}>
                 <div className={styles.cover_container}>
-
+                    <img src={cover} alt={title} />
                 </div>
 
                 <div className={styles.info_card}>
@@ -21,8 +21,8 @@ function BookCard() {
                     </div>
 
                     <div className={styles.bottom_part}>
-                        <span> osamu dazai </span>
-                        <p> No Longer Human </p>
+                        <span> {author} </span>
+                        <p> {title} </p>
                     </div>
                 </div>
             </div>

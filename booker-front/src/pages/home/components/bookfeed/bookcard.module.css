@@ -2,19 +2,21 @@
     margin-right: 25px;
 }
 
-
 .cover_container {
+    background-color: var(--bg-dark-cover);
+}
+
+.cover_container, .cover_container img {
     width: 160px;
     height: 160px;
     border-radius: 5px 5px 0px 0px;
-    background-color: var(--bg-dark-cover);
 }
 
 .info_card {
     display: flex;
     flex-flow: column nowrap;
     width: 160px;
-    height: 80px;
+    height: 90px;
     border-radius: 0px 0px 5px 5px;
     background-color: var(--bg-dark-low);
 }

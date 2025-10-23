@@ -12,18 +12,25 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.get("/books")
-def get_books(query: str = "python"):
-    res = requests.get("https://openlibrary.org/search.json?q=python")
+@app.get("/books/{genre}")
+def get_books(genre: str, limit: int = 7):
+    url = f"https://openlibrary.org/subjects/{genre}.json?limit={limit}"
+    res = requests.get(url)
     data = res.json()
-    
+
     books = []
-    for book in data["docs"][:2]:
+    for work in data.get("works", []):
+        cover_id = work.get("cover_id")
+        if not cover_id:
+            continue
+
         books.append({
-            "title": book["title"],
-            "author": ", ".join(book.get("author_name", []))
+            "title": work.get("title"),
+            "author": work.get("authors", [{}])[0].get("name", "Unknown"),
+            "cover": f"https://covers.openlibrary.org/b/id/{cover_id}-L.jpg"
         })
-    return books
+
+    return {"books": books}
 
 # you can view someone's list but only owner can edit
 @app.get("/booklist")

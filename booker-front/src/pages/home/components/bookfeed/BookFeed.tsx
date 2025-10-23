@@ -15,14 +15,19 @@ function BookFeed() {
     }, []);
 
   return (
-    <div className={styles.main_block}>
-        <h2>Fiction</h2>
-        <div className={styles.book_cards_container}>
-            <BookCard />
-            
+        <div className={styles.main_block}>
+            <h2>Fiction</h2>
+            <div className={styles.book_cards_container}>
+                <BookCard />
+                <BookCard />
+                <BookCard />
+                <BookCard />
+                <BookCard />
+                <BookCard />
+
+            </div>
         </div>
-    </div>
-  );
+    );
 }
 
 export default BookFeed;

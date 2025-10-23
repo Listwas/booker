@@ -1,0 +1,75 @@
+.bookcard_container {
+    margin-right: 25px;
+}
+
+
+.cover_container {
+    width: 160px;
+    height: 160px;
+    border-radius: 5px 5px 0px 0px;
+    background-color: var(--bg-dark-cover);
+}
+
+.info_card {
+    display: flex;
+    flex-flow: column nowrap;
+    width: 160px;
+    height: 80px;
+    border-radius: 0px 0px 5px 5px;
+    background-color: var(--bg-dark-low);
+}
+
+.top_part {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    height: 30px;
+    gap: 3px;
+}
+
+.star_svg {
+    width: 2rem;
+    height: 16px;
+    margin-left: 10px; 
+    background-size: 16px;
+    background: url("data:image/svg+xml,%3Csvg%20width='14'%20height='14'%20viewBox='0%200%2010%2010'%20fill='none'%20xmlns='http://www.w3.org/2000/svg'%3E%3Cpath%20d='M4.75537%200L5.87794%203.45492H9.51065L6.57173%205.59017L7.6943%209.04508L4.75537%206.90983L1.81644%209.04508L2.93901%205.59017L8.86917e-05%203.45492H3.6328L4.75537%200Z'%20fill='%23F5C518'/%3E%3C/svg%3E") no-repeat center;
+}
+
+.rating_score {
+    font-size: 0.8rem; 
+    color: var(--bg-dark-text);
+}
+
+.rating_count {
+    font-size: 0.625rem;
+    color: var(--bg-dark-text-count);
+}
+
+.button_container {
+    display: flex;
+    justify-content: end;
+    width: 100%;
+}
+
+.button_container button {
+    width: 30px;
+    height: 30px;
+    border: none;
+    border-radius: 0px 0px 0px 5px;
+    font-size: 1.25rem;
+    font-weight: 700;
+    background-color: var(--bg-dark-button);
+    color: var(--bg-dark-text);
+}
+
+.bottom_part {
+    text-align: start;
+    font-size: 0.8rem;
+    margin-left: 10px;
+    color: var(--bg-dark-text-secondary);
+}
+
+.bottom_part p {
+    margin: 0;
+    color: var(--bg-dark-text);
+}

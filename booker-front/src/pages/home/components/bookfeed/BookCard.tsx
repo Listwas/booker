@@ -1,7 +1,6 @@
 import styles from './bookcard.module.css';
 
 function BookCard({ title, author, cover }) {
-
     return(
         <>    
             <div className={styles.bookcard_container}>

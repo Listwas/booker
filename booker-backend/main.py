@@ -27,7 +27,7 @@ def get_books(genre: str, limit: int = 7):
         books.append({
             "title": work.get("title"),
             "author": work.get("authors", [{}])[0].get("name", "Unknown"),
-            "cover": f"https://covers.openlibrary.org/b/id/{cover_id}-L.jpg"
+            "cover": f"https://covers.openlibrary.org/b/id/{cover_id}-M.jpg"
         })
 
     return {"books": books}

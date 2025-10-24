@@ -9,7 +9,9 @@ function Home() {
                 <div>
                     <Nav />
                     <div className={s.main_block} >
-                        <BookFeed />
+                        <BookFeed genre="fiction" />
+                        <BookFeed header="Young adult" genre="young_adults" />
+                        <BookFeed genre="horror" />
                     </div>
                 </div>
             </main>

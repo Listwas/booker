@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import styles from './bookfeed.module.css';
+import BookCardSkeleton from './BookCardSkeleton.jsx'
 import BookCard from './BookCard.jsx';
 
 function BookFeed({ header, genre }) {
@@ -27,11 +28,7 @@ function BookFeed({ header, genre }) {
             <div className={styles.cards_carousel}>
                 <div className={styles.group}>
                 { loading ? (
-                    <div className={styles.loading_placeholder}>
-                        <div>
-                            <h1> Loading... </h1>
-                        </div>
-                    </div>    
+                    Array.from({ length: 5 }).map((_, index) => <BookCardSkeleton key={index} />)
                 ) : (    
                     books.map((book, index) => (
                         <BookCard 

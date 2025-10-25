@@ -13,7 +13,7 @@ app.add_middleware(
 )
 
 @app.get("/books/{genre}")
-def get_books(genre: str, limit: int = 7):
+def get_books(genre: str, limit: int = 20):
     url = f"https://openlibrary.org/subjects/{genre}.json?limit={limit}"
     res = requests.get(url)
     data = res.json()

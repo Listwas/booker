@@ -7,7 +7,7 @@
     width: 100%;
 }
 
-/* header */
+/* --- carousel header --- */
 .main_block h2 {
     margin: 1rem 0 1rem 1.5rem;
     font-size: 2rem;
@@ -16,28 +16,52 @@
     color: var(--bg-dark-text);
 }
 
-/* horizontal scroll container */
+/* --- wrapper controls visibility --- */
+.carousel_wrapper {
+    position: relative;
+    width: 100%;
+}
+
 .cards_carousel {
     display: flex;
-    width: 100%;
     overflow-x: auto;
-    scroll-snap-type: x mandatory;
-    padding-bottom: 0.5rem;
+    scroll-behavior: smooth;
+    scrollbar-width: none;
 }
 
 .cards_carousel::-webkit-scrollbar {
     display: none;
 }
 
-/* group of cards inside carousel */
-.group {
-    display: flex;
-    gap: 1.5rem;
-    flex-wrap: nowrap;
-    padding: 0 1.5rem;
+/* --- hover buttons --- */
+.scroll_button {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 40px;
+    height: 80px;
+    background: var(--bg-dark-button);
+    color: var(--bg-dark-text);
+    border: none;
+    font-size: 2rem;
+    cursor: pointer;
+    transition: opacity 0.2s ease;
+    opacity: 0;
 }
 
-/* skeleton loading placeholder */
+.carousel_wrapper:hover .scroll_button {
+    opacity: 1;
+}
+
+.left_button {
+    left: 0;
+}
+
+.right_button {
+    right: 0;
+}
+
+/* --- skeleton loading --- */
 .loading_placeholder {
     display: flex;
     justify-content: center;

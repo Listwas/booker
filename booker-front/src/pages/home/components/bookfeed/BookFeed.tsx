@@ -3,47 +3,55 @@ import styles from './bookfeed.module.css';
 import BookCardSkeleton from './BookCardSkeleton.tsx'
 import BookCard from './BookCard.tsx';
 
-function BookFeed({ header, genre }) {
-    const [books, setBooks] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const carouselRef = useRef(null);
 
-    const scroll = (direction) =>  {
+interface Book{
+    title: string;
+    author: string;
+    cover: string;
+}
+
+function BookFeed({ header, genre }: { header?: string; genre: string }) {
+    const [books, setBooks] = useState<Book[]>([]);
+    const [loading, setLoading] = useState(true);
+    const carouselRef = useRef<HTMLDivElement>(null);
+
+    const scroll = (direction: 'left' | 'right') => {
         const container = carouselRef.current;
-        const scrollAmount = 895; 
-        container.scrollBy({
+        const scrollAmount = 895;
+        container?.scrollBy({
             left: direction === "left" ? -scrollAmount : scrollAmount,
         });
-    }
-
-    const scrollHandle = () => {
-        const container = carouselRef.current;
-        if (!container) return;
-
-        const scrollWidthHalf = container.scrollWidth / 2;
-        
-        if (container.scrollLeft >= scrollWidthHalf) {
-            container.scrollLeft -= scrollWidthHalf;
-        } 
-        else if (container.scrollLeft <= 0) {
-            container.scrollLeft += scrollWidthHalf;
-        } 
-    }
+    };
 
     useEffect(() => {
-        fetch(`http://127.0.0.1:8000/books/${genre}`)
-            .then(res => res.json())
-            .then(data => {
-                setBooks(data.books);
-                setLoading(false);
-            })
-            .catch(error => {
-                console.error("error fetching books:", error);
-                setLoading(false); 
-            });
+        const fetchBooks = async () => {
+          try {
+              const response = await fetch(`http://127.0.0.1:8000/books/${genre}`);
+              const data: Book[] = await response.json();
+              setBooks(data.books)
+          } catch (error) {
+              console.error('error fetching books:', error);
+          } finally {
+              setLoading(false);
+          }
+        };
+        fetchBooks();
+    }, [genre]);
 
-
-    }, []);
+    if (loading) {
+       return (
+       <>        
+           <div className={styles.main_block}>
+               <h2>{header ? header : genre}</h2>
+           </div>     
+           <div className={styles.cards_carousel}>
+               {Array.from({ length: 5 }).map((_, index) => (
+                   <BookCardSkeleton key={index} />
+                ))}
+           </div>
+       </>
+       );
+    }
 
     return (
         <div className={styles.main_block}>
@@ -57,11 +65,8 @@ function BookFeed({ header, genre }) {
                         ‹
                     </button>
 
-                    <div className={styles.cards_carousel} ref={carouselRef} onScroll={scrollHandle}>
-                    { loading ? (
-                        Array.from({ length: 5 }).map((_, index) => <BookCardSkeleton key={index} />)
-                    ) : (
-                        [...books, ...books].map((book, index) => (
+                    <div className={styles.cards_carousel} ref={carouselRef} >
+                    {books.map((book, index) => (
                             <BookCard 
                                 key={index}
                                 title={book.title}
@@ -69,7 +74,7 @@ function BookFeed({ header, genre }) {
                                 cover={book.cover}
                             />
                         ))
-                    )}
+                    }
                     </div>
 
                     <button

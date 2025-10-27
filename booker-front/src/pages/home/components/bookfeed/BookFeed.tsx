@@ -3,24 +3,24 @@ import styles from './bookfeed.module.css';
 import BookCardSkeleton from './BookCardSkeleton.tsx'
 import BookCard from './BookCard.tsx';
 
-
 interface Book{
     title: string;
     author: string;
     cover: string;
 }
 
+const ITEM_WIDTH = 224;
+
 function BookFeed({ header, genre }: { header?: string; genre: string }) {
     const [books, setBooks] = useState<Book[]>([]);
     const [loading, setLoading] = useState(true);
-    const carouselRef = useRef<HTMLDivElement>(null);
+    const [scrollPosition, setScrollPosition] = useState(0);
+    const containerRef = useRef<HTMLDivElement>(null);
 
-    const scroll = (direction: 'left' | 'right') => {
-        const container = carouselRef.current;
-        const scrollAmount = 895;
-        container?.scrollBy({
-            left: direction === "left" ? -scrollAmount : scrollAmount,
-        });
+    const handleScroll = (scrollAmount) => {
+       const newScrollPosition = scrollPosition + scrollAmount;
+       setScrollPosition(newScrollPosition);
+       containerRef.current.scrollLeft = newScrollPosition; 
     };
 
     useEffect(() => {
@@ -60,12 +60,12 @@ function BookFeed({ header, genre }: { header?: string; genre: string }) {
                 <div className={styles.carousel_wrapper}>
                     <button
                         className={`${styles.scroll_button} ${styles.left_button}`}
-                        onClick={() => scroll("left")}
+                        onClick={() => {handleScroll(-ITEM_WIDTH)}}
                     >
                         ‹
                     </button>
 
-                    <div className={styles.cards_carousel} ref={carouselRef} >
+                    <div className={styles.cards_carousel} ref={containerRef} >
                     {books.map((book, index) => (
                             <BookCard 
                                 key={index}
@@ -79,7 +79,7 @@ function BookFeed({ header, genre }: { header?: string; genre: string }) {
 
                     <button
                         className={`${styles.scroll_button} ${styles.right_button}`}
-                        onClick={() => scroll("right")}
+                        onClick={() => {handleScroll(ITEM_WIDTH)}}
                     >
                         ›
                     </button>

@@ -9,20 +9,14 @@ interface Book{
     cover: string;
 }
 
-const ITEM_WIDTH = 224;
+const ITEM_WIDTH = 224 * 4;
 
 function BookFeed({ header, genre }: { header?: string; genre: string }) {
     const [books, setBooks] = useState<Book[]>([]);
     const [loading, setLoading] = useState(true);
     const [scrollPosition, setScrollPosition] = useState(0);
     const containerRef = useRef<HTMLDivElement>(null);
-
-    const handleScroll = (scrollAmount) => {
-       const newScrollPosition = scrollPosition + scrollAmount;
-       setScrollPosition(newScrollPosition);
-       containerRef.current.scrollLeft = newScrollPosition; 
-    };
-
+    
     useEffect(() => {
         const fetchBooks = async () => {
           try {
@@ -37,6 +31,24 @@ function BookFeed({ header, genre }: { header?: string; genre: string }) {
         };
         fetchBooks();
     }, [genre]);
+
+
+    const handleScroll = (scrollAmount) => {
+        const lastCard = document.getElementsByClassName(styles.cards_carousel)[0].lastChild;
+        const xOffset = lastCard.getBoundingClientRect().x;
+        console.log('xoffset is', xOffset);
+        if (xOffset < 3000 && scrollAmount > 0) {
+            for (let i = 0; i < 4; i++) {
+                books.push(books[books.length % 20]);
+            }
+            setBooks(books);
+        };
+
+        const newScrollPosition = scrollPosition + scrollAmount;
+        setScrollPosition(newScrollPosition);
+        containerRef.current.scrollLeft = newScrollPosition; 
+    };
+
 
     if (loading) {
        return (

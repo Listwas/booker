@@ -24,7 +24,7 @@
 
 .cards_carousel {
     display: flex;
-    overflow-x: auto;
+    overflow-x: hidden;
     scroll-behavior: smooth;
     scrollbar-width: none;
 }

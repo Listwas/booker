@@ -1,11 +1,11 @@
 import constants from '../../constants.json';
-import styles from './logobox.module.css';
+import s from './logobox.module.css';
 
 function LogoBox() {
     return (
         <>
             <div>
-                <a className={styles.logo_text} href={constants.HOME_PAGE_LINK}>Booker</a>
+                <p className={s.logo_text}>Booker</p>
             </div>
         </>
     );

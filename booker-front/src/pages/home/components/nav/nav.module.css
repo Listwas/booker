@@ -13,7 +13,7 @@
     /* ./logobox.module.css */
 }
 
-.middle_block {
+.middle_block{
     display: flex;
     flex-wrap: nowrap;
     color: var(--bg-dark-text);
@@ -22,6 +22,7 @@
     margin-top: 10px;
     gap: 1.4vw;
     white-space: nowrap;
+    text-decoration: none;
 }
 
 .right_block {

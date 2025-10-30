@@ -13,7 +13,12 @@
     /* ./logobox.module.css */
 }
 
-.middle_block{
+.no_decor {
+    color: var(--bg-dark-text);
+    text-decoration: none;
+}
+
+.middle_block {
     display: flex;
     flex-wrap: nowrap;
     color: var(--bg-dark-text);

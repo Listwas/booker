@@ -1,5 +1,4 @@
 import Search from './Search.tsx';
-import LogoBox from './LogoBox.tsx';
 import { Link } from 'react-router-dom';
 import s from './nav.module.css';
 
@@ -8,7 +7,9 @@ function Nav() {
         <>
             <div className={s.nav_container}>
                 <div className={s.left_block}>
-                    <Link to="/" className={s.no_decor}><LogoBox /></Link>
+                    <Link to="/" className={s.no_decor}>
+                        <span>Booker</span>
+                    </Link>
                 </div>
 
                 <div className={s.middle_block}>

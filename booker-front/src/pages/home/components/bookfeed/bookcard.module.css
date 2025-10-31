@@ -3,7 +3,7 @@
     margin-left: 1.5rem;
     border-radius: 5px;
     overflow: hidden;
-    background-color: var(--bg-dark-low);
+    background-color: var(--bg-dark-10);
     display: flex;
     flex-direction: column;
 }
@@ -12,7 +12,7 @@
 .cover_container {
     width: 100%;
     height: 250px;
-    background-color: var(--bg-dark-cover);
+    background-color: var(--bg-dark-cover-60);
 }
 
 .cover_container img {
@@ -47,7 +47,7 @@
 
 .rating_score {
     font-size: 0.9rem;
-    color: var(--bg-dark-text);
+    color: var(--bg-dark-text-95);
 }
 
 .rating_count {
@@ -65,8 +65,8 @@
     height: 32px;
     border: none;
     border-radius: 4px;
-    background-color: var(--bg-dark-button);
-    color: var(--bg-dark-text);
+    background-color: var(--bg-dark-button-30);
+    color: var(--bg-dark-text-95);
     font-size: 1.4rem;
     cursor: pointer;
 }
@@ -80,7 +80,7 @@
     padding: 2px;
     flex-grow: 1;
     text-align: left;
-    color: var(--bg-dark-text-secondary);
+    color: var(--bg-dark-text-70);
 }
 
 .bottom_part span {
@@ -90,7 +90,7 @@
 .bottom_part p {
     font-size: 1rem;
     margin: 4px 0 0;
-    color: var(--bg-dark-text);
+    color: var(--bg-dark-text-95);
 }
 
 /* --- skeleton loader styles --- */
@@ -101,7 +101,7 @@
 
 .skeleton_box,
 .skeleton_line {
-    background-color: var(--bg-dark-cover);
+    background-color: var(--bg-dark-cover-60);
     border-radius: 5px;
 }
 
@@ -113,7 +113,7 @@
 .skeleton_line {
     height: 14px;
     margin: 6px 0;
-    background-color: var(--bg-dark-cover);
+    background-color: var(--bg-dark-cover-60);
     opacity: 0.8;
 }
 

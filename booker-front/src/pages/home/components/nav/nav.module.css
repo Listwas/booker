@@ -4,24 +4,27 @@
     text-align: center;
     align-items: center;
     justify-content: space-between;
-    background-color: var(--bg-dark-low);
+    background-color: var(--bg-dark-10);
     height: 88px;
     border-radius: 10px 10px 0 0;
 }
 
 .left_block {
-    /* ./logobox.module.css */
+    font-size: 2.5rem;
+    font-weight: 900;
+    cursor: pointer;
+    margin: 0px 3vw 0px 25px;
 }
 
 .no_decor {
-    color: var(--bg-dark-text);
+    color: var(--bg-dark-text-95);
     text-decoration: none;
 }
 
 .middle_block {
     display: flex;
     flex-wrap: nowrap;
-    color: var(--bg-dark-text);
+    color: var(--bg-dark-text-95);
     max-width: 600px;
     font-size: 1.5rem;
     margin-top: 10px;

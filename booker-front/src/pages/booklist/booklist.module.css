@@ -1,4 +1,81 @@
-.vorp {
-    color: white;
+.page {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.main_container {
+    width: 1060px;
+}
+
+/* --- NAV BAR --- */
+.nav_container {
+    display: flex;
+    width: 1060px;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.logo_box, .current_book_list_msg {
+    margin: 10px 0px;
+    
+    color: var(--bg-dark-text-95);
+}
+
+.logo_box {
+    font-size: 3rem;
+    font-weight: 700;
+    margin-left: 25px;
+    text-decoration: none;
+}
+
+.current_book_list_msg {
+    margin-right: 25px;
+    font-size: 1.5rem
+}
+/* --- --- --- */
+
+
+/* --- STATUSES --- */
+.content_box {
+    display: flex;
+    flex-flow: column nowrap;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    border: 3px solid var(--bg-dark-10);
+}
+
+.statuses_box {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.5rem;
+    margin: 25px;
+    gap: 25px;
+}
+
+.statuses_box .statuses {
+    text-decoration: none;
+    color: var(--bg-dark-text-95);
+}
+/* --- --- --- */
+
+/* --- BOOKS CONTAINER --- */
+.books_container {
+    width: 880px;
+    margin: 0px 25px 0px 25px;
+    border: 1px solid var(--bg-dark-80);
+    border-radius: 5px;
+    height: 200px;
+}
+
+.book_details {
+    display: flex;
+    border-bottom: 1px solid var(--bg-dark-80);
+    justify-content: space-around;
+    width: 100%;
+    font-size: 1.125rem;
 
 }
+

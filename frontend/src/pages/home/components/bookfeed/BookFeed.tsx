@@ -1,103 +1,50 @@
-import { useEffect, useState, useRef } from 'react';
-import styles from './bookfeed.module.css';
+import { useEffect, useState, useRef } from 'react'
+import styles from './bookfeed.module.css'
+import BookCard from './BookCard.tsx'
 import BookCardSkeleton from './BookCardSkeleton.tsx'
-import BookCard from './BookCard.tsx';
 
-interface Book{
-    title: string;
-    author: string;
-    cover: string;
+interface Book {
+    title: string
+    author: string
+    cover: string
 }
 
-const ITEM_WIDTH = 224 * 4;
+const SCROLL_AMOUNT = 216 * 4
 
 function BookFeed({ header, genre }: { header?: string; genre: string }) {
-    const [books, setBooks] = useState<Book[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [scrollPosition, setScrollPosition] = useState(0);
-    const containerRef = useRef<HTMLDivElement>(null);
-    
+    const [books, setBooks] = useState<Book[]>([])
+    const [loading, setLoading] = useState(true)
+    const ref = useRef<HTMLDivElement>(null)
+
     useEffect(() => {
-        const fetchBooks = async () => {
-          try {
-              const response = await fetch(`http://127.0.0.1:8000/books/${genre}`);
-              const data: Book[] = await response.json();
-              setBooks(data.books)
-          } catch (error) {
-              console.error('error fetching books:', error);
-          } finally {
-              setLoading(false);
-          }
-        };
-        fetchBooks();
-    }, [genre]);
+        fetch(`http://127.0.0.1:8000/books/${genre}`)
+            .then(r => r.json())
+            .then(d => setBooks(d.books))
+            .catch(console.error)
+            .finally(() => setLoading(false))
+    }, [genre])
 
-
-    const handleScroll = (scrollAmount) => {
-        const lastCard = document.getElementsByClassName(styles.cards_carousel)[0].lastChild;
-        const xOffset = lastCard.getBoundingClientRect().x;
-        console.log('xoffset is', xOffset);
-        if (xOffset < 3000 && scrollAmount > 0) {
-            for (let i = 0; i < 4; i++) {
-                books.push(books[books.length % 20]);
-            }
-            setBooks(books);
-        };
-
-        const newScrollPosition = scrollPosition + scrollAmount;
-        setScrollPosition(newScrollPosition);
-        containerRef.current.scrollLeft = newScrollPosition; 
-    };
-
-
-    if (loading) {
-       return (
-       <>        
-           <div className={styles.main_block}>
-               <h2>{header ? header : genre}</h2>
-           </div>     
-           <div className={styles.cards_carousel}>
-               {Array.from({ length: 5 }).map((_, index) => (
-                   <BookCardSkeleton key={index} />
-                ))}
-           </div>
-       </>
-       );
+    const scroll = (dir: number) => {
+        ref.current?.scrollBy({ left: SCROLL_AMOUNT * dir, behavior: "smooth" })
     }
 
     return (
-        <div className={styles.main_block}>
-            <h2>{header ? header : genre}</h2>
-                
-                <div className={styles.carousel_wrapper}>
-                    <button
-                        className={`${styles.scroll_button} ${styles.left_button}`}
-                        onClick={() => {handleScroll(-ITEM_WIDTH)}}
-                    >
-                        ‹
-                    </button>
+        <div className={styles.feed_block}>
+            <h2>{header ?? genre}</h2>
+            <div className={styles.carousel_wrapper}>
+                <button className={`${styles.arrow} ${styles.arrow_left}`} onClick={() => scroll(-1)}>‹</button>
 
-                    <div className={styles.cards_carousel} ref={containerRef} >
-                    {books.map((book, index) => (
-                            <BookCard 
-                                key={index}
-                                title={book.title}
-                                author={book.author}
-                                cover={book.cover}
-                            />
-                        ))
+                <div className={styles.cards_row} ref={ref}>
+                    {loading
+                        ? Array.from({ length: 5 }).map((_, i) => <BookCardSkeleton key={i} />)
+                        : books.map((b, i) => <BookCard key={i} title={b.title} author={b.author} cover={b.cover} />)
                     }
-                    </div>
+                </div>
 
-                    <button
-                        className={`${styles.scroll_button} ${styles.right_button}`}
-                        onClick={() => {handleScroll(ITEM_WIDTH)}}
-                    >
-                        ›
-                    </button>
-                </div> 
+                <button className={`${styles.arrow} ${styles.arrow_right}`} onClick={() => scroll(1)}>›</button>
+            </div>
         </div>
-    );
+    )
 }
 
-export default BookFeed;
+export default BookFeed

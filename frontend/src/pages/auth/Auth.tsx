@@ -1,10 +1,12 @@
 import { useState } from "react"
-import { useNavigate } from "react-router-dom"
+import { useNavigate, useLocation } from "react-router-dom"
 import { useAuth } from "../../context/AuthContext"
 import s from "./auth.module.css"
 
 export default function Auth() {
-    const [mode, setMode] = useState<"login" | "register">("login")
+    const location = useLocation()
+    const initialMode = location.state?.mode ?? "register"
+    const [mode, setMode] = useState<"login" | "register">(initialMode)
     const [username, setUsername] = useState("")
     const [email, setEmail] = useState("")
     const [password, setPassword] = useState("")
@@ -28,7 +30,7 @@ export default function Auth() {
             }
         }
         const ok = await login(username, password)
-        if (!ok) { setError("Invalid credentials"); return }
+        if (!ok) { setError("invalid credentials"); return }
         navigate("/")
     }
 

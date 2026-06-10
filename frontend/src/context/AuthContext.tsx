@@ -1,4 +1,4 @@
-import { createContext, useContext, useState } from "react"
+import { createContext, useContext, useState, useEffect } from "react"
 
 interface User {
     username: string
@@ -18,6 +18,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [token, setToken] = useState<string | null>(localStorage.getItem("token"))
     const [user, setUser] = useState<User | null>(null)
 
+    useEffect(() => {
+        if (!token) return
+        fetch("http://127.0.0.1:8000/me", {
+            headers: { Authorization: `Bearer ${token}` }
+        })
+            .then(r => r.ok ? r.json() : null)
+            .then(d => { if (d) setUser(d) })
+            .catch(() => {
+                localStorage.removeItem("token")
+                setToken(null)
+            })
+    }, [])
+
     const login = async (username: string, password: string) => {
         const res = await fetch("http://127.0.0.1:8000/login", {
             method: "POST",
@@ -28,6 +41,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         const data = await res.json()
         localStorage.setItem("token", data.access_token)
+        localStorage.setItem("hasAccount", "true")
         setToken(data.access_token)
 
         const me = await fetch("http://127.0.0.1:8000/me", {

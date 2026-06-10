@@ -1,20 +1,16 @@
-import Nav from './components/nav/Nav.tsx'
-import BookFeed from './components/bookfeed/BookFeed.tsx'
-import s from './home.module.css'
+import Nav from "./components/nav/Nav"
+import BookFeed from "./components/bookfeed/BookFeed"
+import s from "./home.module.css"
 
-function Home() {
-    return ( 
+export default function Home() {
+    return (
         <>
-            <main className={s.main}>
-                <div>
-                    <Nav />
-                    <div className={s.main_block} >
-                        <BookFeed genre="fiction" />
-                    </div>
-                </div>
-            </main>
+            <Nav />
+            <div className={s.page_wrapper}>
+                <BookFeed genre="fantasy" />
+                <BookFeed genre="science-fiction" header="Sci-Fi" />
+                <BookFeed genre="mystery" />
+            </div>
         </>
     )
 }
-
-export default Home;

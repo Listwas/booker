@@ -1,0 +1,68 @@
+.page {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+.box {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 320px;
+    padding: 32px;
+    border: 3px solid var(--bg-dark-10);
+    border-radius: 8px;
+}
+
+.logo {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--bg-dark-text-95);
+    margin-bottom: 8px;
+}
+
+.toggle {
+    display: flex;
+    gap: 8px;
+}
+
+.toggle button {
+    flex: 1;
+    padding: 6px;
+    background: none;
+    border: 1px solid var(--bg-dark-80);
+    border-radius: 4px;
+    color: var(--bg-dark-text-70);
+    cursor: pointer;
+}
+
+.toggle .active {
+    color: var(--bg-dark-text-95);
+    border-color: var(--bg-dark-text-95);
+}
+
+.box input {
+    padding: 8px 10px;
+    background: var(--bg-dark-10);
+    border: 1px solid var(--bg-dark-button-30);
+    border-radius: 4px;
+    color: var(--bg-dark-text-95);
+    font-size: 1rem;
+}
+
+.submit {
+    padding: 8px;
+    background: var(--bg-dark-button-30);
+    border: none;
+    border-radius: 4px;
+    color: var(--bg-dark-text-95);
+    font-size: 1rem;
+    cursor: pointer;
+    margin-top: 4px;
+}
+
+.error {
+    color: hsl(0, 70%, 60%);
+    font-size: .85rem;
+}

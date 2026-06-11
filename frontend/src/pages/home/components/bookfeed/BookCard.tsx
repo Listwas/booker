@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useAuth } from '../../../../context/AuthContext'
+import { useToast } from '../../../../context/ToastContext'
 import styles from './bookcard.module.css'
 
 interface BookCardProps {
@@ -11,10 +12,11 @@ interface BookCardProps {
 function BookCard({ title, author, cover }: BookCardProps) {
     const { token } = useAuth()
     const [added, setAdded] = useState(false)
+    const { showToast } = useToast()
 
     const handleAdd = async () => {
         if (!token || added) return
-        await fetch("http://127.0.0.1:8000/list", {
+        const res = await fetch("http://127.0.0.1:8000/list", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
@@ -22,7 +24,10 @@ function BookCard({ title, author, cover }: BookCardProps) {
             },
             body: JSON.stringify({ title, author, cover, status: "plan", rating: null, progress: null })
         })
-        setAdded(true)
+        if (res.ok) {
+            setAdded(true)
+            showToast(`"${title}" added to plan`)
+        }
     }
 
     return (

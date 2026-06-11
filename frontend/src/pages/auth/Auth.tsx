@@ -48,9 +48,9 @@ export default function Auth() {
                     <button onClick={() => setMode("register")} className={mode === "register" ? s.active : ""}>register</button>
                 </div>
 
-                <input placeholder="username" value={username} onChange={e => setUsername(e.target.value)} onKeyDown={handleKey}/>
-                {mode === "register" && <input placeholder="email" value={email} onChange={e => setEmail(e.target.value)} onKeyDown={handleKey}/>}
-                <input placeholder="password" type="password" value={password} onChange={e => setPassword(e.target.value)} onKeyDown={handleKey}/>
+                <input name="password" placeholder="username" value={username} onChange={e => setUsername(e.target.value)} onKeyDown={handleKey}/>
+                {mode === "register" && <input name="email" placeholder="email" value={email} onChange={e => setEmail(e.target.value)} onKeyDown={handleKey}/>}
+                <input name="password" placeholder="password" type="password" value={password} onChange={e => setPassword(e.target.value)} onKeyDown={handleKey}/>
 
                 {error && <span className={s.error}>{error}</span>}
 

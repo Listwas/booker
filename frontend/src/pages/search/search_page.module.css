@@ -1,0 +1,28 @@
+.page {
+    max-width: 1060px;
+    margin: 0 auto;
+    padding: 32px 20px;
+}
+
+.heading {
+    font-size: 1.1rem;
+    color: var(--bg-dark-text-70);
+    margin: 0 0 24px;
+}
+
+.heading span {
+    color: var(--bg-dark-text-95);
+    font-weight: 600;
+}
+
+.grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.empty {
+    color: var(--bg-dark-text-70);
+    padding: 48px 0;
+    font-size: 0.95rem;
+}

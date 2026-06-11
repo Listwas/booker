@@ -166,3 +166,19 @@ def get_books(genre: str, limit: int = 20):
             "cover": f"https://covers.openlibrary.org/b/id/{cid}-M.jpg"
         })
     return {"books": books}
+
+@app.get("/search")
+def search_books(q: str, limit: int = 20):
+    url = f"https://openlibrary.org/search.json?q={q}&limit={limit}&fields=title,author_name,cover_i"
+    data = requests.get(url).json()
+    books = []
+    for doc in data.get("docs", []):
+        cid = doc.get("cover_i")
+        if not cid:
+            continue
+        books.append({
+            "title": doc.get("title"),
+            "author": doc.get("author_name", ["Unknown"])[0],
+            "cover": f"https://covers.openlibrary.org/b/id/{cid}-M.jpg"
+        })
+    return {"books": books}

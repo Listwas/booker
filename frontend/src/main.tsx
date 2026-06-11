@@ -6,6 +6,7 @@ import Home from './pages/home/Home.tsx'
 import BookList from './pages/booklist/BookList.tsx'
 import Auth from './pages/auth/Auth.tsx'
 import Profile from './pages/profile/Profile.tsx'
+import SearchPage from './pages/search/SearchPage.tsx'
 
 
 createRoot(document.getElementById('root')!).render(
@@ -17,6 +18,7 @@ createRoot(document.getElementById('root')!).render(
           <Route path="/list" element={<BookList />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/profile" element={<Profile />} />
+          <Route path="/search" element={<SearchPage />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

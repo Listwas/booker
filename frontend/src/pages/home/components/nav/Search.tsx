@@ -57,7 +57,9 @@ function Search() {
                     onKeyDown={handleKey}
                     onBlur={() => setTimeout(() => setOpen(false), 150)}
                 />
-                <button className={styles.arrow_btn} onClick={go}>→</button>
+                {query.length > 0 && (
+                    <button className={styles.arrow_btn} onClick={go}>→</button>
+                )}
             </div>
 
             {open && results.length > 0 && (

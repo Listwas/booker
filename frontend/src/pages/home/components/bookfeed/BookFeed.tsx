@@ -17,12 +17,25 @@ function BookFeed({ header, genre }: { header?: string; genre: string }) {
     const ref = useRef<HTMLDivElement>(null)
 
     useEffect(() => {
+        const cacheKey = `books_${genre}`
+        const cached = localStorage.getItem(cacheKey)
+        if (cached) {
+            const { data, ts } = JSON.parse(cached)
+            if (Date.now() - ts < 10 * 60 * 1000) {
+                setBooks(data)
+                setLoading(false)
+                return
+            }
+        }
         fetch(`http://127.0.0.1:8000/books/${genre}`)
             .then(r => r.json())
-            .then(d => setBooks(d.books))
+            .then(d => {
+                setBooks(d.books)
+                localStorage.setItem(cacheKey, JSON.stringify({ data: d.books, ts: Date.now() }))
+            })
             .catch(console.error)
             .finally(() => setLoading(false))
-    }, [genre])
+        }, [genre])
 
     const scroll = (dir: number) => {
         ref.current?.scrollBy({ left: SCROLL_AMOUNT * dir, behavior: "smooth" })

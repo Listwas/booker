@@ -27,6 +27,11 @@
     color: var(--bg-dark-text-95);
     font-size: 0.9rem;
     font-family: inherit;
+    border-radius: 6px;
+}
+
+.input_row:has(.arrow_btn) .search {
+    border-radius: 6px 0 0 6px;
 }
 
 .search::placeholder {

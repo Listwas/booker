@@ -41,8 +41,10 @@ class BookEntry(BaseModel):
     rating: float | None = None
     progress: int | None = None
 
-class StatusUpdate(BaseModel):
-    status: str
+class BookUpdate(BaseModel):
+    status: str | None = None
+    rating: float | None = None
+    progress: int | None = None
 
 
 def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
@@ -113,14 +115,18 @@ def add_book(body: BookEntry, current_user: User = Depends(get_current_user), db
 
 
 @app.patch("/list/{book_id}")
-def update_status(book_id: int, body: StatusUpdate, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+def update_book(book_id: int, body: BookUpdate, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     entry = db.query(UserBook).filter(UserBook.id == book_id, UserBook.user_id == current_user.id).first()
     if not entry:
         raise HTTPException(status_code=404, detail="Not found")
-    entry.status = body.status
+    if body.status is not None:
+        entry.status = body.status
+    if body.rating is not None:
+        entry.rating = body.rating
+    if body.progress is not None:
+        entry.progress = body.progress
     db.commit()
     return entry
-
 
 @app.delete("/list/{book_id}")
 def remove_book(book_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):

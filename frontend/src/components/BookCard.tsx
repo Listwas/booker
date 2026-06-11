@@ -1,18 +1,19 @@
 import { useState } from 'react'
-import { useAuth } from '../../../../context/AuthContext'
-import { useToast } from '../../../../context/ToastContext'
+import { useAuth } from '../context/AuthContext'
+import { useToast } from '../context/ToastContext'
 import styles from './bookcard.module.css'
 
 interface BookCardProps {
     title: string
     author: string
     cover: string
+    workId?: string
 }
 
-function BookCard({ title, author, cover }: BookCardProps) {
+function BookCard({ title, author, cover, workId }: BookCardProps) {
     const { token } = useAuth()
-    const [added, setAdded] = useState(false)
     const { showToast } = useToast()
+    const [added, setAdded] = useState(false)
 
     const handleAdd = async () => {
         if (!token || added) return

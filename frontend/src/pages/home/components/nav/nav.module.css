@@ -12,56 +12,45 @@
     margin: 0 auto;
     display: flex;
     align-items: center;
+    justify-content: space-between;
     height: 56px;
     padding: 0 20px;
-    gap: 32px;
 }
 
 .logo {
-    font-size: 1.4rem;
-    font-weight: 900;
+    font-size: 1.25rem;
+    font-weight: 600;
     color: hsl(47, 92%, 53%);
     text-decoration: none;
-    white-space: nowrap;
-    letter-spacing: -0.02em;
+    letter-spacing: -0.01em;
     flex-shrink: 0;
 }
 
 .middle_block {
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: 2px;
     flex: 1;
+    justify-content: center;
 }
 
 .nav_link {
     color: var(--bg-dark-text-70);
     text-decoration: none;
-    font-size: 0.875rem;
-    white-space: nowrap;
-    padding: 6px 10px;
-    border-radius: 4px;
-    transition: color 0.15s;
-    position: relative;
+    font-size: 0.85rem;
+    padding: 6px 12px;
+    border-radius: 6px;
+    transition: all 0.15s;
 }
 
 .nav_link:hover {
     color: var(--bg-dark-text-95);
+    background: var(--bg-dark-10);
 }
 
 .nav_link.active {
     color: var(--bg-dark-text-95);
-}
-
-.nav_link.active::after {
-    content: '';
-    position: absolute;
-    bottom: -1px;
-    left: 10px;
-    right: 10px;
-    height: 2px;
-    background: hsl(47, 92%, 53%);
-    border-radius: 2px;
+    background: var(--bg-dark-10);
 }
 
 .right_block {
@@ -72,57 +61,59 @@
 }
 
 .theme_btn {
-    width: 30px;
-    height: 30px;
-    background: none;
+    width: 32px;
+    height: 32px;
+    background: transparent;
     border: 1px solid var(--bg-dark-10);
-    border-radius: 4px;
+    border-radius: 6px;
     color: var(--bg-dark-text-70);
     cursor: pointer;
-    font-size: 0.9rem;
+    font-size: 1rem;
     display: flex;
     align-items: center;
     justify-content: center;
     transition: all 0.15s;
-    flex-shrink: 0;
 }
 
 .theme_btn:hover {
-    border-color: var(--bg-dark-button-30);
+    border-color: var(--bg-dark-30);
     color: var(--bg-dark-text-95);
+    background: var(--bg-dark-10);
 }
 
 .auth_btn {
     padding: 5px 12px;
-    background: none;
-    border: 1px solid var(--bg-dark-button-30);
-    border-radius: 4px;
+    background: transparent;
+    border: 1px solid var(--bg-dark-20);
+    border-radius: 6px;
     color: var(--bg-dark-text-70);
     font-size: 0.8rem;
     cursor: pointer;
     text-decoration: none;
-    white-space: nowrap;
     transition: all 0.15s;
-    font-family: inherit;
 }
 
 .auth_btn:hover {
-    border-color: var(--bg-dark-text-95);
+    border-color: var(--bg-dark-40);
     color: var(--bg-dark-text-95);
+    background: var(--bg-dark-10);
 }
 
 .avatar_circle {
-    width: 28px;
-    height: 28px;
+    width: 32px;
+    height: 32px;
     border-radius: 50%;
     background: hsl(47, 92%, 53%);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.7rem;
-    font-weight: 700;
+    font-size: 0.75rem;
+    font-weight: 600;
     color: hsl(0, 0%, 10%);
     text-decoration: none;
-    cursor: pointer;
-    flex-shrink: 0;
+    transition: opacity 0.15s;
+}
+
+.avatar_circle:hover {
+    opacity: 0.8;
 }

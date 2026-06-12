@@ -12,6 +12,9 @@ interface Stats {
     plan: number
     dropped: number
     hold: number
+    total_pages_read: number
+    reading_time_hours: number
+    reading_time_days: number
 }
 
 interface Book {
@@ -22,6 +25,7 @@ interface Book {
     status: string
     rating: number | null
     progress: number | null
+    work_id: string | null
 }
 
 interface ProfileData {
@@ -98,6 +102,21 @@ export default function Profile() {
                         ))}
                     </div>
 
+                    <div className={s.stats_row}>
+                        <div className={s.stat}>
+                            <span className={s.stat_value}>{data.stats.total_pages_read}</span>
+                            <span className={s.stat_label}>pages read</span>
+                        </div>
+                        <div className={s.stat}>
+                            <span className={s.stat_value}>{data.stats.reading_time_hours}</span>
+                            <span className={s.stat_label}>hours read</span>
+                        </div>
+                        <div className={s.stat}>
+                            <span className={s.stat_value}>{data.stats.reading_time_days}</span>
+                            <span className={s.stat_label}>days read</span>
+                        </div>
+                    </div>
+
                     <div className={s.progress_bar}>
                         {SEGMENTS.map(({ key, cls }) => (
                             data.stats[key] > 0 && (
@@ -125,9 +144,16 @@ export default function Profile() {
                 {recent.length > 0 && (
                     <div className={s.recent_section}>
                         <p className={s.section_title}>recently added</p>
-                        <div className={s.recent_strip}>
+                        <div className={s.recent_grid}>
                             {recent.map((b, i) => (
-                                <BookCard key={i} title={b.title} author={b.author} cover={b.cover} />
+                                <BookCard
+                                    key={i}
+                                    title={b.title}
+                                    author={b.author}
+                                    cover={b.cover}
+                                    workId={b.work_id || undefined}
+                                    hideAddButton={true}
+                                />
                             ))}
                         </div>
                     </div>

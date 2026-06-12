@@ -16,6 +16,11 @@ export default function AddCustomBook({ onClose, onAdded }: Props) {
     const [cover, setCover] = useState("")
 
     const submit = async () => {
+        if (!token) {
+            showToast("Please login first")
+            onClose()
+            return
+        }
         if (!title.trim() || !author.trim()) return
         const res = await fetch("http://127.0.0.1:8000/list", {
             method: "POST",
@@ -29,7 +34,8 @@ export default function AddCustomBook({ onClose, onAdded }: Props) {
                 cover: cover || "https://covers.openlibrary.org/b/id/0-M.jpg",
                 status: "plan",
                 rating: null,
-                progress: null
+                progress: null,
+                total_pages: null
             })
         })
         if (res.ok) {

@@ -31,6 +31,7 @@ class UserBook(Base):
     progress = Column(Integer, nullable=True)
     total_pages = Column(Integer, nullable=True)
     rereads = Column(Integer, default=0)
+    work_id = Column(String, nullable=True)
 
 
 Base.metadata.create_all(bind=engine)

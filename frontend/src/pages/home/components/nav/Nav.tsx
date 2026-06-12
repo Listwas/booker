@@ -24,18 +24,17 @@ function Nav() {
     return (
         <div className={s.nav_outer}>
             <div className={s.nav_container}>
-                <Link to="/" className={s.logo}>Booker</Link>
+                <Link to="/" className={s.logo}>booker</Link>
 
                 <div className={s.middle_block}>
-                    <Link to="/list" className={`${s.nav_link} ${isActive("/list")}`}>list</Link>
+                    <Link to="/list" className={`${s.nav_link} ${isActive("/list")}`}>library</Link>
                     <Link to="/profile" className={`${s.nav_link} ${isActive("/profile")}`}>profile</Link>
                     <Link to="/list" className={`${s.nav_link} ${isActive("/friends")}`}>friends</Link>
-                    <Link to="/list" className={`${s.nav_link} ${isActive("/reviews")}`}>reviews</Link>
                 </div>
 
                 <div className={s.right_block}>
                     <Search />
-                    <button className={s.theme_btn} onClick={toggleTheme}>◑</button>
+                    <button className={s.theme_btn} onClick={toggleTheme} aria-label="toggle theme">◑</button>
                     {user ? (
                         <>
                             <Link to="/profile" className={s.avatar_circle}>

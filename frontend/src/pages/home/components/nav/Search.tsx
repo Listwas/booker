@@ -6,6 +6,7 @@ interface Result {
     title: string
     author: string
     cover: string
+    work_id: string
 }
 
 function Search() {
@@ -40,9 +41,10 @@ function Search() {
         if (e.key === "Enter") go()
     }
 
-    const handleResultClick = (title: string) => {
+    const handleResultClick = (workId: string) => {
         setOpen(false)
-        navigate(`/search?q=${encodeURIComponent(title)}`)
+        setQuery("")
+        navigate(`/book/${workId}`)
     }
 
     return (
@@ -65,7 +67,7 @@ function Search() {
             {open && results.length > 0 && (
                 <div className={styles.dropdown}>
                     {results.map((r, i) => (
-                        <div key={i} className={styles.dropdown_item} onClick={() => handleResultClick(r.title)}>
+                        <div key={i} className={styles.dropdown_item} onClick={() => handleResultClick(r.work_id)}>
                             <img className={styles.dropdown_cover} src={r.cover} alt={r.title} />
                             <div className={styles.dropdown_info}>
                                 <span className={styles.dropdown_title}>{r.title}</span>

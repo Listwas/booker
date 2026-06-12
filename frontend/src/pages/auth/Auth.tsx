@@ -11,17 +11,30 @@ export default function Auth() {
     const [email, setEmail] = useState("")
     const [password, setPassword] = useState("")
     const [error, setError] = useState("")
+    const [loading, setLoading] = useState(false)
 
     const { login } = useAuth()
     const navigate = useNavigate()
 
     const handleKey = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") submit()
+        if (e.key === "Enter") submit()
     }
 
     const submit = async () => {
         setError("")
+        setLoading(true)
+
         if (mode === "register") {
+            if (!username.trim() || !email.trim() || !password.trim()) {
+                setError("All fields are required")
+                setLoading(false)
+                return
+            }
+            if (password.length < 4) {
+                setError("Password must be at least 4 characters")
+                setLoading(false)
+                return
+            }
             const res = await fetch("http://127.0.0.1:8000/register", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -29,12 +42,18 @@ export default function Auth() {
             })
             if (!res.ok) {
                 const d = await res.json()
-                setError(d.detail)
+                setError(d.detail || "Registration failed")
+                setLoading(false)
                 return
             }
         }
+
         const ok = await login(username, password)
-        if (!ok) { setError("invalid credentials"); return }
+        if (!ok) {
+            setError("Invalid username or password")
+            setLoading(false)
+            return
+        }
         navigate("/")
     }
 
@@ -44,17 +63,17 @@ export default function Auth() {
                 <span className={s.logo}>Booker</span>
 
                 <div className={s.toggle}>
-                    <button onClick={() => setMode("login")} className={mode === "login" ? s.active : ""}>login</button>
-                    <button onClick={() => setMode("register")} className={mode === "register" ? s.active : ""}>register</button>
+                    <button onClick={() => { setMode("login"); setError(""); }} className={mode === "login" ? s.active : ""}>login</button>
+                    <button onClick={() => { setMode("register"); setError(""); }} className={mode === "register" ? s.active : ""}>register</button>
                 </div>
 
-                <input name="password" placeholder="username" value={username} onChange={e => setUsername(e.target.value)} onKeyDown={handleKey}/>
-                {mode === "register" && <input name="email" placeholder="email" value={email} onChange={e => setEmail(e.target.value)} onKeyDown={handleKey}/>}
-                <input name="password" placeholder="password" type="password" value={password} onChange={e => setPassword(e.target.value)} onKeyDown={handleKey}/>
+                <input placeholder="username" value={username} onChange={e => setUsername(e.target.value)} onKeyDown={handleKey} disabled={loading}/>
+                {mode === "register" && <input placeholder="email" type="email" value={email} onChange={e => setEmail(e.target.value)} onKeyDown={handleKey} disabled={loading}/>}
+                <input placeholder="password" type="password" value={password} onChange={e => setPassword(e.target.value)} onKeyDown={handleKey} disabled={loading}/>
 
                 {error && <span className={s.error}>{error}</span>}
 
-                <button className={s.submit} onClick={submit}>{mode}</button>
+                <button className={s.submit} onClick={submit} disabled={loading}>{loading ? "..." : mode}</button>
             </div>
         </div>
     )

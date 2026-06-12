@@ -15,6 +15,9 @@ interface Book {
     status: string
     rating: number | null
     progress: number | null
+    total_pages: number | null
+    rereads: number
+    work_id: string | null
 }
 
 const STATUSES = ["all", "reading", "plan", "completed", "dropped", "hold"]
@@ -25,7 +28,7 @@ export default function BookList() {
     const { showToast } = useToast()
     const navigate = useNavigate()
     const [books, setBooks] = useState<Book[]>([])
-    const [status, setStatus] = useState("all")
+    const [status, setStatus] = useState("plan")
     const [sort, setSort] = useState("recently added")
     const [showModal, setShowModal] = useState(false)
 
@@ -45,7 +48,7 @@ export default function BookList() {
     }, [token, status])
 
     const patch = async (id: number, data: Partial<Book>) => {
-        await fetch(`http://127.0.0.1:8000/list/${id}`, {
+        const res = await fetch(`http://127.0.0.1:8000/list/${id}`, {
             method: "PATCH",
             headers: {
                 "Content-Type": "application/json",
@@ -53,7 +56,13 @@ export default function BookList() {
             },
             body: JSON.stringify(data)
         })
-        setBooks(prev => prev.map(b => b.id === id ? { ...b, ...data } : b))
+        if (res.ok) {
+            const updated = await res.json()
+            setBooks(prev => prev.map(b => b.id === id ? { ...b, ...updated } : b))
+        } else {
+            const err = await res.json()
+            showToast(err.detail || "Update failed")
+        }
     }
 
     const remove = async (id: number, title: string) => {
@@ -63,6 +72,48 @@ export default function BookList() {
         })
         setBooks(prev => prev.filter(b => b.id !== id))
         showToast(`"${title}" removed`)
+    }
+
+    const handleReread = async (id: number, title: string) => {
+        const res = await fetch(`http://127.0.0.1:8000/list/${id}/reread`, {
+            method: "POST",
+            headers: { Authorization: `Bearer ${token}` }
+        })
+        if (res.ok) {
+            const data = await res.json()
+            setBooks(prev => prev.map(b =>
+                b.id === id ? { ...b, rereads: data.rereads, progress: 0, status: "reading" } : b
+            ))
+            showToast(`"${title}" reread started`)
+        }
+    }
+
+    const handleReadChange = (id: number, value: string) => {
+        const num = parseInt(value) || 0
+        const book = books.find(b => b.id === id)
+        if (book?.total_pages && num > book.total_pages) {
+            showToast(`Read pages cannot exceed ${book.total_pages}`)
+            return
+        }
+        patch(id, { progress: num })
+    }
+
+    const handleTotalChange = (id: number, value: string) => {
+        const num = parseInt(value) || 0
+        const book = books.find(b => b.id === id)
+        if (book?.progress && num < book.progress) {
+            showToast(`Total pages cannot be less than read pages (${book.progress})`)
+            return
+        }
+        patch(id, { total_pages: num })
+    }
+
+    const navigateToBook = (book: Book) => {
+        if (book.work_id) {
+            navigate(`/book/${book.work_id}`)
+        } else {
+            navigate(`/search?q=${encodeURIComponent(book.title)}`)
+        }
     }
 
     const sorted = [...books].sort((a, b) => {
@@ -108,11 +159,20 @@ export default function BookList() {
                     ? <p className={s.empty}>nothing here</p>
                     : sorted.map(b => (
                         <div key={b.id} className={s.book_row}>
-                            <img className={s.cover} src={b.cover} alt={b.title} />
+                            <img
+                                className={s.cover}
+                                src={b.cover}
+                                alt={b.title}
+                                onClick={() => navigateToBook(b)}
+                                style={{ cursor: "pointer" }}
+                            />
 
-                            <div className={s.book_info}>
+                            <div className={s.book_info} onClick={() => navigateToBook(b)} style={{ cursor: "pointer" }}>
                                 <span className={s.book_title}>{b.title}</span>
                                 <span className={s.book_author}>{b.author}</span>
+                                {b.rereads > 0 && (
+                                    <span className={s.reread_badge}>reread #{b.rereads}</span>
+                                )}
                             </div>
 
                             <div className={s.book_actions}>
@@ -121,14 +181,27 @@ export default function BookList() {
                                     onChange={v => patch(b.id, { rating: v })}
                                 />
 
-                                <input
-                                    className={s.progress_input}
-                                    type="number"
-                                    min={0}
-                                    value={b.progress ?? 0}
-                                    onChange={e => patch(b.id, { progress: parseInt(e.target.value) || 0 })}
-                                    title="pages read"
-                                />
+                                <div className={s.pages_group}>
+                                    <input
+                                        className={s.page_input}
+                                        type="number"
+                                        min={0}
+                                        value={b.progress ?? 0}
+                                        onChange={e => handleReadChange(b.id, e.target.value)}
+                                        title="pages read"
+                                        placeholder="read"
+                                    />
+                                    <span className={s.page_sep}>/</span>
+                                    <input
+                                        className={s.page_input}
+                                        type="number"
+                                        min={0}
+                                        value={b.total_pages ?? ""}
+                                        onChange={e => handleTotalChange(b.id, e.target.value)}
+                                        title="total pages"
+                                        placeholder="total"
+                                    />
+                                </div>
 
                                 <select
                                     className={s.status_select}
@@ -139,6 +212,14 @@ export default function BookList() {
                                         <option key={st} value={st}>{st}</option>
                                     ))}
                                 </select>
+
+                                <button
+                                    className={s.reread_btn}
+                                    onClick={() => handleReread(b.id, b.title)}
+                                    title="start reread (resets progress)"
+                                >
+                                    ⟳
+                                </button>
 
                                 <button className={s.delete_btn} onClick={() => remove(b.id, b.title)} title="remove">✕</button>
                             </div>

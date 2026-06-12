@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { useParams } from "react-router-dom"
+import { useParams, Link } from "react-router-dom"
 import { useAuth } from "../../context/AuthContext"
 import { useToast } from "../../context/ToastContext"
 import Nav from "../home/components/nav/Nav"
@@ -14,6 +14,13 @@ interface BookDetail {
     subjects: string[]
     first_publish_year: string
     work_id: string
+}
+
+interface UserBook {
+    id: number
+    title: string
+    author: string
+    status: string
 }
 
 function seededRating(workId: string): number {
@@ -31,6 +38,7 @@ export default function BookPage() {
     const { showToast } = useToast()
     const [book, setBook] = useState<BookDetail | null>(null)
     const [added, setAdded] = useState(false)
+    const [existingBookId, setExistingBookId] = useState<number | null>(null)
 
     useEffect(() => {
         if (!workId) return
@@ -40,8 +48,31 @@ export default function BookPage() {
             .catch(console.error)
     }, [workId])
 
+    useEffect(() => {
+        if (!token || !book) return
+        fetch("http://127.0.0.1:8000/list?status=all", {
+            headers: { Authorization: `Bearer ${token}` }
+        })
+            .then(r => r.json())
+            .then((list: UserBook[]) => {
+                const existing = list.find(
+                    item => item.title.toLowerCase() === book.title.toLowerCase() &&
+                            item.author.toLowerCase() === (book.authors[0] || "").toLowerCase()
+                )
+                if (existing) {
+                    setAdded(true)
+                    setExistingBookId(existing.id)
+                }
+            })
+            .catch(console.error)
+    }, [token, book])
+
     const handleAdd = async () => {
-        if (!token || !book || added) return
+        if (!token) {
+            showToast("Please login to add books")
+            return
+        }
+        if (!book || added) return
         const res = await fetch("http://127.0.0.1:8000/list", {
             method: "POST",
             headers: {
@@ -54,11 +85,14 @@ export default function BookPage() {
                 cover: book.cover,
                 status: "plan",
                 rating: null,
-                progress: null
+                progress: null,
+                total_pages: null
             })
         })
         if (res.ok) {
+            const newBook = await res.json()
             setAdded(true)
+            setExistingBookId(newBook.id)
             showToast(`"${book.title}" added to plan`)
         }
     }
@@ -108,12 +142,18 @@ export default function BookPage() {
                             <p className={s.description}>{book.description}</p>
                         )}
 
-                        <button
-                            className={`${s.add_btn} ${added ? s.added : ""}`}
-                            onClick={handleAdd}
-                        >
-                            {added ? "✓ added to list" : token ? "add to list" : "login to add"}
-                        </button>
+                        {added && existingBookId ? (
+                            <Link to="/list" className={s.added_link}>
+                                ✓ already in your library – view list
+                            </Link>
+                        ) : (
+                            <button
+                                className={s.add_btn}
+                                onClick={handleAdd}
+                            >
+                                {token ? "add to library" : "login to add"}
+                            </button>
+                        )}
                     </div>
                 </div>
             </div>

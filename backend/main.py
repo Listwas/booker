@@ -46,6 +46,7 @@ class BookEntry(BaseModel):
     rating: float | None = None
     progress: int | None = None
     total_pages: int | None = None
+    work_id: str | None = None
 
 
 class BookUpdate(BaseModel):
@@ -53,6 +54,7 @@ class BookUpdate(BaseModel):
     rating: float | None = None
     progress: int | None = None
     total_pages: int | None = None
+    work_id: str | None = None
 
 
 def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
@@ -94,6 +96,18 @@ def me(current_user: User = Depends(get_current_user)):
 @app.get("/profile")
 def get_profile(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     books = db.query(UserBook).filter(UserBook.user_id == current_user.id).all()
+    
+    total_pages_read = sum(
+        (b.total_pages if b.status == "completed" and b.total_pages else 0) +
+        (b.progress if b.status == "reading" and b.progress and b.total_pages else 0)
+        for b in books
+    )
+    
+    avg_reading_speed = 50
+    total_reading_time_minutes = total_pages_read // avg_reading_speed if avg_reading_speed > 0 else 0
+    reading_time_hours = total_reading_time_minutes // 60
+    reading_time_days = reading_time_hours // 24
+    
     stats = {
         "total": len(books),
         "reading": sum(1 for b in books if b.status == "reading"),
@@ -101,9 +115,11 @@ def get_profile(current_user: User = Depends(get_current_user), db: Session = De
         "plan": sum(1 for b in books if b.status == "plan"),
         "dropped": sum(1 for b in books if b.status == "dropped"),
         "hold": sum(1 for b in books if b.status == "hold"),
+        "total_pages_read": total_pages_read,
+        "reading_time_hours": reading_time_hours,
+        "reading_time_days": reading_time_days,
     }
     return {"username": current_user.username, "email": current_user.email, "stats": stats}
-
 
 @app.get("/list")
 def get_list(status: str = "all", current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
@@ -115,12 +131,31 @@ def get_list(status: str = "all", current_user: User = Depends(get_current_user)
 
 @app.post("/list")
 def add_book(body: BookEntry, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    existing = db.query(UserBook).filter(
+        UserBook.user_id == current_user.id,
+        UserBook.title == body.title,
+        UserBook.author == body.author
+    ).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="Book already in your list")
+    
     entry = UserBook(user_id=current_user.id, **body.model_dump())
     db.add(entry)
     db.commit()
     db.refresh(entry)
-    return entry
-
+    return {
+        "id": entry.id,
+        "user_id": entry.user_id,
+        "title": entry.title,
+        "author": entry.author,
+        "cover": entry.cover,
+        "status": entry.status,
+        "rating": entry.rating,
+        "progress": entry.progress,
+        "total_pages": entry.total_pages,
+        "rereads": entry.rereads,
+        "work_id": entry.work_id
+    }
 
 @app.patch("/list/{book_id}")
 def update_book(book_id: int, body: BookUpdate, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
@@ -139,9 +174,24 @@ def update_book(book_id: int, body: BookUpdate, current_user: User = Depends(get
         entry.total_pages = body.total_pages
         if entry.progress is not None and entry.progress > entry.total_pages:
             entry.progress = entry.total_pages
+    if body.work_id is not None:
+        entry.work_id = body.work_id
     db.commit()
-    return entry
-
+    db.refresh(entry)
+    
+    return {
+        "id": entry.id,
+        "user_id": entry.user_id,
+        "title": entry.title,
+        "author": entry.author,
+        "cover": entry.cover,
+        "status": entry.status,
+        "rating": entry.rating,
+        "progress": entry.progress,
+        "total_pages": entry.total_pages,
+        "rereads": entry.rereads,
+        "work_id": entry.work_id
+    }
 
 @app.delete("/list/{book_id}")
 def remove_book(book_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
@@ -169,14 +219,14 @@ def reread_book(book_id: int, current_user: User = Depends(get_current_user), db
 def seed(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     db.query(UserBook).filter(UserBook.user_id == current_user.id).delete()
     mock = [
-        {"title": "The Name of the Wind", "author": "Patrick Rothfuss", "cover": "https://covers.openlibrary.org/b/id/9326654-M.jpg", "status": "completed", "rating": 9.1, "progress": 662, "total_pages": 662, "rereads": 0},
-        {"title": "The Way of Kings", "author": "Brandon Sanderson", "cover": "https://covers.openlibrary.org/b/id/8146092-M.jpg", "status": "completed", "rating": 9.4, "progress": 1007, "total_pages": 1007, "rereads": 1},
-        {"title": "Dune", "author": "Frank Herbert", "cover": "https://covers.openlibrary.org/b/id/8760472-M.jpg", "status": "reading", "rating": None, "progress": 312, "total_pages": 896, "rereads": 0},
-        {"title": "Neuromancer", "author": "William Gibson", "cover": "https://covers.openlibrary.org/b/id/8775481-M.jpg", "status": "plan", "rating": None, "progress": 0, "total_pages": 271, "rereads": 0},
-        {"title": "Blood Meridian", "author": "Cormac McCarthy", "cover": "https://covers.openlibrary.org/b/id/8231856-M.jpg", "status": "dropped", "rating": 6.0, "progress": 140, "total_pages": 351, "rereads": 0},
-        {"title": "Foundation", "author": "Isaac Asimov", "cover": "https://covers.openlibrary.org/b/id/8398800-M.jpg", "status": "hold", "rating": None, "progress": 80, "total_pages": 255, "rereads": 0},
-        {"title": "Mistborn", "author": "Brandon Sanderson", "cover": "https://covers.openlibrary.org/b/id/8391784-M.jpg", "status": "completed", "rating": 8.7, "progress": 541, "total_pages": 541, "rereads": 0},
-        {"title": "Hyperion", "author": "Dan Simmons", "cover": "https://covers.openlibrary.org/b/id/360716-M.jpg", "status": "plan", "rating": None, "progress": 0, "total_pages": 482, "rereads": 0},
+        {"title": "The Name of the Wind", "author": "Patrick Rothfuss", "cover": "https://covers.openlibrary.org/b/id/9326654-M.jpg", "status": "completed", "rating": 9.1, "progress": 662, "total_pages": 662, "rereads": 0, "work_id": "OL17354253W"},
+        {"title": "The Way of Kings", "author": "Brandon Sanderson", "cover": "https://covers.openlibrary.org/b/id/8146092-M.jpg", "status": "completed", "rating": 9.4, "progress": 1007, "total_pages": 1007, "rereads": 1, "work_id": "OL15646042W"},
+        {"title": "Dune", "author": "Frank Herbert", "cover": "https://covers.openlibrary.org/b/id/8760472-M.jpg", "status": "reading", "rating": None, "progress": 312, "total_pages": 896, "rereads": 0, "work_id": "OL893415W"},
+        {"title": "Neuromancer", "author": "William Gibson", "cover": "https://covers.openlibrary.org/b/id/8775481-M.jpg", "status": "plan", "rating": None, "progress": 0, "total_pages": 271, "rereads": 0, "work_id": "OL834643W"},
+        {"title": "Blood Meridian", "author": "Cormac McCarthy", "cover": "https://covers.openlibrary.org/b/id/8231856-M.jpg", "status": "dropped", "rating": 6.0, "progress": 140, "total_pages": 351, "rereads": 0, "work_id": "OL98567W"},
+        {"title": "Foundation", "author": "Isaac Asimov", "cover": "https://covers.openlibrary.org/b/id/8398800-M.jpg", "status": "hold", "rating": None, "progress": 80, "total_pages": 255, "rereads": 0, "work_id": "OL46534W"},
+        {"title": "Mistborn", "author": "Brandon Sanderson", "cover": "https://covers.openlibrary.org/b/id/8391784-M.jpg", "status": "completed", "rating": 8.7, "progress": 541, "total_pages": 541, "rereads": 0, "work_id": "OL57218W"},
+        {"title": "Hyperion", "author": "Dan Simmons", "cover": "https://covers.openlibrary.org/b/id/360716-M.jpg", "status": "plan", "rating": None, "progress": 0, "total_pages": 482, "rereads": 0, "work_id": "OL160426W"},
     ]
     for m in mock:
         db.add(UserBook(user_id=current_user.id, **m))
@@ -264,3 +314,18 @@ def get_book(work_id: str):
         "first_publish_year": data.get("first_publish_date", ""),
         "work_id": work_id
     }
+
+@app.get("/book/{work_id}/metadata")
+def get_book_metadata(work_id: str):
+    cache_key = f"metadata_{work_id}"
+    if cache_key in genre_cache:
+        return genre_cache[cache_key]
+    
+    url = f"https://openlibrary.org/works/{work_id}.json"
+    data = requests.get(url).json()
+    
+    pages = data.get("number_of_pages")
+    
+    result = {"total_pages": pages}
+    genre_cache[cache_key] = result
+    return result

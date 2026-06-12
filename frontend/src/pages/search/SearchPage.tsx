@@ -8,6 +8,7 @@ interface Book {
     title: string
     author: string
     cover: string
+    work_id: string
 }
 
 export default function SearchPage() {
@@ -39,7 +40,7 @@ export default function SearchPage() {
                         ? <p className={s.empty}>nothing found</p>
                         : <div className={s.grid}>
                             {books.map((b, i) => (
-                                <BookCard key={i} title={b.title} author={b.author} cover={b.cover} />
+                                <BookCard key={i} title={b.title} author={b.author} cover={b.cover} workId={b.work_id}/>
                             ))}
                         </div>
                 }

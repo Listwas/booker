@@ -1,0 +1,113 @@
+.page {
+    max-width: 1060px;
+    margin: 0 auto;
+    padding: 40px 20px;
+}
+
+.content {
+    display: flex;
+    gap: 40px;
+    align-items: flex-start;
+}
+
+.cover {
+    width: 220px;
+    flex-shrink: 0;
+    border-radius: 6px;
+    overflow: hidden;
+    background: var(--bg-dark-10);
+}
+
+.cover img {
+    width: 100%;
+    display: block;
+}
+
+.info {
+    flex: 1;
+    min-width: 0;
+}
+
+.title {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--bg-dark-text-95);
+    margin: 0 0 8px;
+    line-height: 1.2;
+}
+
+.authors {
+    font-size: 1rem;
+    color: var(--bg-dark-text-70);
+    margin: 0 0 20px;
+}
+
+.rating_row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.rating_label {
+    font-size: 0.78rem;
+    color: var(--bg-dark-text-70);
+}
+
+.meta {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+}
+
+.subject_pill {
+    padding: 4px 10px;
+    background: var(--bg-dark-10);
+    border-radius: 20px;
+    font-size: 0.75rem;
+    color: var(--bg-dark-text-70);
+}
+
+.year {
+    font-size: 0.85rem;
+    color: var(--bg-dark-text-70);
+    margin-bottom: 16px;
+}
+
+.description {
+    font-size: 0.9rem;
+    color: var(--bg-dark-text-70);
+    line-height: 1.7;
+    margin-bottom: 28px;
+    white-space: pre-line;
+}
+
+.add_btn {
+    padding: 10px 24px;
+    background: hsl(47, 92%, 53%);
+    border: none;
+    border-radius: 6px;
+    color: hsl(0, 0%, 10%);
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    transition: opacity 0.15s;
+}
+
+.add_btn:hover {
+    opacity: 0.85;
+}
+
+.add_btn.added {
+    background: none;
+    border: 1px solid var(--bg-dark-button-30);
+    color: var(--bg-dark-text-70);
+    cursor: default;
+}
+
+.loading {
+    color: var(--bg-dark-text-70);
+    padding: 48px 0;
+}

@@ -7,6 +7,7 @@ interface Book {
     title: string
     author: string
     cover: string
+    work_id: string
 }
 
 const SCROLL_AMOUNT = 216 * 4
@@ -50,7 +51,7 @@ function BookFeed({ header, genre }: { header?: string; genre: string }) {
                 <div className={styles.cards_row} ref={ref}>
                     {loading
                         ? Array.from({ length: 5 }).map((_, i) => <BookCardSkeleton key={i} />)
-                        : books.map((b, i) => <BookCard key={i} title={b.title} author={b.author} cover={b.cover} />)
+                        : books.map((b, i) => <BookCard key={i} title={b.title} author={b.author} cover={b.cover} workId={b.work_id}/>)
                     }
                 </div>
 

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
 import styles from './bookcard.module.css'
@@ -13,6 +14,7 @@ interface BookCardProps {
 function BookCard({ title, author, cover, workId }: BookCardProps) {
     const { token } = useAuth()
     const { showToast } = useToast()
+    const navigate = useNavigate()
     const [added, setAdded] = useState(false)
 
     const handleAdd = async () => {
@@ -31,9 +33,17 @@ function BookCard({ title, author, cover, workId }: BookCardProps) {
         }
     }
 
+    const handleCoverClick = () => {
+        if (workId) navigate(`/book/${workId}`)
+    }
+
     return (
         <div className={styles.bookcard_container}>
-            <div className={styles.cover_container}>
+            <div
+                className={styles.cover_container}
+                onClick={handleCoverClick}
+                style={{ cursor: workId ? "pointer" : "default" }}
+            >
                 <img src={cover} alt={title} />
             </div>
 

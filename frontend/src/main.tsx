@@ -8,6 +8,7 @@ import BookList from './pages/booklist/BookList.tsx'
 import Auth from './pages/auth/Auth.tsx'
 import Profile from './pages/profile/Profile.tsx'
 import SearchPage from './pages/search/SearchPage.tsx'
+import BookPage from './pages/book/BookPage.tsx'
 import './index.css'
 
 createRoot(document.getElementById('root')!).render(
@@ -21,6 +22,7 @@ createRoot(document.getElementById('root')!).render(
             <Route path="/auth" element={<Auth />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/search" element={<SearchPage />} />
+            <Route path="/book/:workId" element={<BookPage />} />
           </Routes>
         </BrowserRouter>
       </ToastProvider>

@@ -16,7 +16,7 @@ function Nav() {
 
     const handleLogout = () => {
         logout()
-        navigate("/")
+        navigate("/", { replace: true })
     }
 
     const isActive = (path: string) => location.pathname === path ? s.active : ""

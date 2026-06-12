@@ -166,25 +166,60 @@ def get_books(genre: str, limit: int = 20):
         cid = w.get("cover_id")
         if not cid:
             continue
+        work_id = w.get("key", "").replace("/works/", "")
         books.append({
             "title": w.get("title"),
             "author": w.get("authors", [{}])[0].get("name") if w.get("authors") else "Unknown",
-            "cover": f"https://covers.openlibrary.org/b/id/{cid}-M.jpg"
+            "cover": f"https://covers.openlibrary.org/b/id/{cid}-M.jpg",
+            "work_id": work_id
         })
     return {"books": books}
 
 @app.get("/search")
 def search_books(q: str, limit: int = 20):
-    url = f"https://openlibrary.org/search.json?q={q}&limit={limit}&fields=title,author_name,cover_i"
+    url = f"https://openlibrary.org/search.json?q={q}&limit={limit}&fields=title,author_name,cover_i,key"
     data = requests.get(url).json()
     books = []
     for doc in data.get("docs", []):
         cid = doc.get("cover_i")
         if not cid:
             continue
+        work_id = doc.get("key", "").replace("/works/", "")
         books.append({
             "title": doc.get("title"),
             "author": doc.get("author_name", ["Unknown"])[0],
-            "cover": f"https://covers.openlibrary.org/b/id/{cid}-M.jpg"
+            "cover": f"https://covers.openlibrary.org/b/id/{cid}-M.jpg",
+            "work_id": work_id
         })
     return {"books": books}
+
+@app.get("/book/{work_id}")
+def get_book(work_id: str):
+    url = f"https://openlibrary.org/works/{work_id}.json"
+    data = requests.get(url).json()
+
+    description = data.get("description", "")
+    if isinstance(description, dict):
+        description = description.get("value", "")
+
+    subjects = data.get("subjects", [])[:6]
+
+    authors = []
+    for a in data.get("authors", []):
+        author_key = a.get("author", {}).get("key", "")
+        if author_key:
+            author_data = requests.get(f"https://openlibrary.org{author_key}.json").json()
+            authors.append(author_data.get("name", "Unknown"))
+
+    covers = data.get("covers", [])
+    cover = f"https://covers.openlibrary.org/b/id/{covers[0]}-L.jpg" if covers else ""
+
+    return {
+        "title": data.get("title", ""),
+        "authors": authors,
+        "cover": cover,
+        "description": description,
+        "subjects": subjects,
+        "first_publish_year": data.get("first_publish_date", ""),
+        "work_id": work_id
+    }

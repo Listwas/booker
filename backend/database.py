@@ -26,9 +26,11 @@ class UserBook(Base):
     title = Column(String)
     author = Column(String)
     cover = Column(String)
-    status = Column(String) 
+    status = Column(String)
     rating = Column(Float, nullable=True)
-    progress = Column(Integer, nullable=True) 
+    progress = Column(Integer, nullable=True)
+    total_pages = Column(Integer, nullable=True)
+    rereads = Column(Integer, default=0)
 
 
 Base.metadata.create_all(bind=engine)

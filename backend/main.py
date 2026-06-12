@@ -4,6 +4,7 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 import requests
+from cachetools import TTLCache
 
 from database import SessionLocal, User, UserBook
 from auth import hash_password, verify_password, create_token, decode_token
@@ -19,6 +20,9 @@ app.add_middleware(
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
+search_cache = TTLCache(maxsize=100, ttl=600)
+genre_cache = TTLCache(maxsize=100, ttl=600)
+
 
 def get_db():
     db = SessionLocal()
@@ -33,6 +37,7 @@ class RegisterBody(BaseModel):
     email: str
     password: str
 
+
 class BookEntry(BaseModel):
     title: str
     author: str
@@ -40,11 +45,14 @@ class BookEntry(BaseModel):
     status: str
     rating: float | None = None
     progress: int | None = None
+    total_pages: int | None = None
+
 
 class BookUpdate(BaseModel):
     status: str | None = None
     rating: float | None = None
     progress: int | None = None
+    total_pages: int | None = None
 
 
 def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
@@ -124,9 +132,16 @@ def update_book(book_id: int, body: BookUpdate, current_user: User = Depends(get
     if body.rating is not None:
         entry.rating = body.rating
     if body.progress is not None:
+        if entry.total_pages is not None and body.progress > entry.total_pages:
+            raise HTTPException(status_code=400, detail="Progress cannot exceed total pages")
         entry.progress = body.progress
+    if body.total_pages is not None:
+        entry.total_pages = body.total_pages
+        if entry.progress is not None and entry.progress > entry.total_pages:
+            entry.progress = entry.total_pages
     db.commit()
     return entry
+
 
 @app.delete("/list/{book_id}")
 def remove_book(book_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
@@ -138,18 +153,30 @@ def remove_book(book_id: int, current_user: User = Depends(get_current_user), db
     return {"message": "deleted"}
 
 
+@app.post("/list/{book_id}/reread")
+def reread_book(book_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    entry = db.query(UserBook).filter(UserBook.id == book_id, UserBook.user_id == current_user.id).first()
+    if not entry:
+        raise HTTPException(status_code=404, detail="Not found")
+    entry.rereads += 1
+    entry.progress = 0
+    entry.status = "reading"
+    db.commit()
+    return {"message": "reread count incremented", "rereads": entry.rereads}
+
+
 @app.post("/seed")
 def seed(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     db.query(UserBook).filter(UserBook.user_id == current_user.id).delete()
     mock = [
-        {"title": "The Name of the Wind", "author": "Patrick Rothfuss", "cover": "https://covers.openlibrary.org/b/id/9326654-M.jpg", "status": "completed", "rating": 9.1, "progress": 662},
-        {"title": "The Way of Kings", "author": "Brandon Sanderson", "cover": "https://covers.openlibrary.org/b/id/8146092-M.jpg", "status": "completed", "rating": 9.4, "progress": 1007},
-        {"title": "Dune", "author": "Frank Herbert", "cover": "https://covers.openlibrary.org/b/id/8760472-M.jpg", "status": "reading", "rating": None, "progress": 312},
-        {"title": "Neuromancer", "author": "William Gibson", "cover": "https://covers.openlibrary.org/b/id/8775481-M.jpg", "status": "plan", "rating": None, "progress": 0},
-        {"title": "Blood Meridian", "author": "Cormac McCarthy", "cover": "https://covers.openlibrary.org/b/id/8231856-M.jpg", "status": "dropped", "rating": 6.0, "progress": 140},
-        {"title": "Foundation", "author": "Isaac Asimov", "cover": "https://covers.openlibrary.org/b/id/8398800-M.jpg", "status": "hold", "rating": None, "progress": 80},
-        {"title": "Mistborn", "author": "Brandon Sanderson", "cover": "https://covers.openlibrary.org/b/id/8391784-M.jpg", "status": "completed", "rating": 8.7, "progress": 541},
-        {"title": "Hyperion", "author": "Dan Simmons", "cover": "https://covers.openlibrary.org/b/id/360716-M.jpg", "status": "plan", "rating": None, "progress": 0},
+        {"title": "The Name of the Wind", "author": "Patrick Rothfuss", "cover": "https://covers.openlibrary.org/b/id/9326654-M.jpg", "status": "completed", "rating": 9.1, "progress": 662, "total_pages": 662, "rereads": 0},
+        {"title": "The Way of Kings", "author": "Brandon Sanderson", "cover": "https://covers.openlibrary.org/b/id/8146092-M.jpg", "status": "completed", "rating": 9.4, "progress": 1007, "total_pages": 1007, "rereads": 1},
+        {"title": "Dune", "author": "Frank Herbert", "cover": "https://covers.openlibrary.org/b/id/8760472-M.jpg", "status": "reading", "rating": None, "progress": 312, "total_pages": 896, "rereads": 0},
+        {"title": "Neuromancer", "author": "William Gibson", "cover": "https://covers.openlibrary.org/b/id/8775481-M.jpg", "status": "plan", "rating": None, "progress": 0, "total_pages": 271, "rereads": 0},
+        {"title": "Blood Meridian", "author": "Cormac McCarthy", "cover": "https://covers.openlibrary.org/b/id/8231856-M.jpg", "status": "dropped", "rating": 6.0, "progress": 140, "total_pages": 351, "rereads": 0},
+        {"title": "Foundation", "author": "Isaac Asimov", "cover": "https://covers.openlibrary.org/b/id/8398800-M.jpg", "status": "hold", "rating": None, "progress": 80, "total_pages": 255, "rereads": 0},
+        {"title": "Mistborn", "author": "Brandon Sanderson", "cover": "https://covers.openlibrary.org/b/id/8391784-M.jpg", "status": "completed", "rating": 8.7, "progress": 541, "total_pages": 541, "rereads": 0},
+        {"title": "Hyperion", "author": "Dan Simmons", "cover": "https://covers.openlibrary.org/b/id/360716-M.jpg", "status": "plan", "rating": None, "progress": 0, "total_pages": 482, "rereads": 0},
     ]
     for m in mock:
         db.add(UserBook(user_id=current_user.id, **m))
@@ -159,6 +186,10 @@ def seed(current_user: User = Depends(get_current_user), db: Session = Depends(g
 
 @app.get("/books/{genre}")
 def get_books(genre: str, limit: int = 20):
+    cache_key = f"{genre}_{limit}"
+    if cache_key in genre_cache:
+        return genre_cache[cache_key]
+
     url = f"https://openlibrary.org/subjects/{genre}.json?limit={limit}"
     data = requests.get(url).json()
     books = []
@@ -173,10 +204,17 @@ def get_books(genre: str, limit: int = 20):
             "cover": f"https://covers.openlibrary.org/b/id/{cid}-M.jpg",
             "work_id": work_id
         })
-    return {"books": books}
+    result = {"books": books}
+    genre_cache[cache_key] = result
+    return result
+
 
 @app.get("/search")
 def search_books(q: str, limit: int = 20):
+    cache_key = f"{q}_{limit}"
+    if cache_key in search_cache:
+        return search_cache[cache_key]
+
     url = f"https://openlibrary.org/search.json?q={q}&limit={limit}&fields=title,author_name,cover_i,key"
     data = requests.get(url).json()
     books = []
@@ -191,7 +229,10 @@ def search_books(q: str, limit: int = 20):
             "cover": f"https://covers.openlibrary.org/b/id/{cid}-M.jpg",
             "work_id": work_id
         })
-    return {"books": books}
+    result = {"books": books}
+    search_cache[cache_key] = result
+    return result
+
 
 @app.get("/book/{work_id}")
 def get_book(work_id: str):

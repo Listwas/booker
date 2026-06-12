@@ -55,6 +55,38 @@
     margin-bottom: 36px;
 }
 
+.stats_grid {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 24px;
+}
+
+.stats_card {
+    flex: 1;
+    min-width: 100px;
+    background: var(--bg-dark-10);
+    border-radius: 8px;
+    padding: 16px 12px;
+    text-align: center;
+}
+
+.stats_value {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--bg-dark-text-95);
+    display: block;
+    line-height: 1.2;
+}
+
+.stats_label {
+    font-size: 0.7rem;
+    color: var(--bg-dark-text-70);
+    text-transform: lowercase;
+    margin-top: 4px;
+    display: block;
+}
+
 .stats_row {
     display: flex;
     gap: 10px;
@@ -90,6 +122,7 @@
     border-radius: 6px;
     overflow: hidden;
     gap: 2px;
+    margin: 16px 0 12px;
 }
 
 .progress_segment {
@@ -141,12 +174,15 @@
     .recent_grid {
         grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
     }
-}
-
-.recent_strip {
-    display: flex;
-    gap: 16px;
-    flex-wrap: wrap;
+    
+    .stats_card {
+        min-width: 80px;
+        padding: 12px 8px;
+    }
+    
+    .stats_value {
+        font-size: 1.2rem;
+    }
 }
 
 .logged_out {
@@ -172,4 +208,3 @@
 .cta_btn:hover {
     border-color: var(--bg-dark-text-95);
 }
-

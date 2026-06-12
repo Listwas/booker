@@ -35,11 +35,11 @@ interface ProfileData {
 }
 
 const SEGMENTS = [
-    { key: "reading",   cls: s.seg_reading },
-    { key: "completed", cls: s.seg_completed },
-    { key: "plan",      cls: s.seg_plan },
-    { key: "dropped",   cls: s.seg_dropped },
-    { key: "hold",      cls: s.seg_hold },
+    { key: "reading",   cls: s.seg_reading, label: "reading" },
+    { key: "completed", cls: s.seg_completed, label: "completed" },
+    { key: "plan",      cls: s.seg_plan, label: "plan" },
+    { key: "dropped",   cls: s.seg_dropped, label: "dropped" },
+    { key: "hold",      cls: s.seg_hold, label: "hold" },
 ] as const
 
 export default function Profile() {
@@ -79,6 +79,21 @@ export default function Profile() {
 
     const total = data.stats.total || 1
 
+    const readingStats = [
+        { label: "total", value: data.stats.total },
+        { label: "reading", value: data.stats.reading },
+        { label: "completed", value: data.stats.completed },
+        { label: "plan", value: data.stats.plan },
+        { label: "dropped", value: data.stats.dropped },
+        { label: "hold", value: data.stats.hold },
+    ]
+
+    const readingMetrics = [
+        { label: "pages read", value: data.stats.total_pages_read },
+        { label: "hours read", value: data.stats.reading_time_hours },
+        { label: "days read", value: data.stats.reading_time_days },
+    ]
+
     return (
         <>
             <Nav />
@@ -91,30 +106,24 @@ export default function Profile() {
                 </div>
 
                 <div className={s.stats_section}>
-                    <p className={s.section_title}>statistics</p>
+                    <p className={s.section_title}>library stats</p>
 
-                    <div className={s.stats_row}>
-                        {(["total", "reading", "completed", "plan", "dropped", "hold"] as const).map(key => (
-                            <div className={s.stat} key={key}>
-                                <span className={s.stat_value}>{data.stats[key]}</span>
-                                <span className={s.stat_label}>{key}</span>
+                    <div className={s.stats_grid}>
+                        {readingStats.map(stat => (
+                            <div className={s.stats_card} key={stat.label}>
+                                <span className={s.stats_value}>{stat.value}</span>
+                                <span className={s.stats_label}>{stat.label}</span>
                             </div>
                         ))}
                     </div>
 
-                    <div className={s.stats_row}>
-                        <div className={s.stat}>
-                            <span className={s.stat_value}>{data.stats.total_pages_read}</span>
-                            <span className={s.stat_label}>pages read</span>
-                        </div>
-                        <div className={s.stat}>
-                            <span className={s.stat_value}>{data.stats.reading_time_hours}</span>
-                            <span className={s.stat_label}>hours read</span>
-                        </div>
-                        <div className={s.stat}>
-                            <span className={s.stat_value}>{data.stats.reading_time_days}</span>
-                            <span className={s.stat_label}>days read</span>
-                        </div>
+                    <div className={s.stats_grid}>
+                        {readingMetrics.map(metric => (
+                            <div className={s.stats_card} key={metric.label}>
+                                <span className={s.stats_value}>{metric.value.toLocaleString()}</span>
+                                <span className={s.stats_label}>{metric.label}</span>
+                            </div>
+                        ))}
                     </div>
 
                     <div className={s.progress_bar}>
@@ -124,17 +133,18 @@ export default function Profile() {
                                     key={key}
                                     className={`${s.progress_segment} ${cls}`}
                                     style={{ width: `${(data.stats[key] / total) * 100}%` }}
+                                    title={`${key}: ${data.stats[key]} books`}
                                 />
                             )
                         ))}
                     </div>
 
                     <div className={s.legend}>
-                        {SEGMENTS.map(({ key, cls }) => (
+                        {SEGMENTS.map(({ key, cls, label }) => (
                             data.stats[key] > 0 && (
                                 <div key={key} className={s.legend_item}>
                                     <div className={`${s.legend_dot} ${cls}`} />
-                                    <span>{key} ({data.stats[key]})</span>
+                                    <span>{label} ({data.stats[key]})</span>
                                 </div>
                             )
                         ))}

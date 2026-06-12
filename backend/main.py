@@ -97,15 +97,16 @@ def me(current_user: User = Depends(get_current_user)):
 def get_profile(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     books = db.query(UserBook).filter(UserBook.user_id == current_user.id).all()
     
-    total_pages_read = sum(
-        (b.total_pages if b.status == "completed" and b.total_pages else 0) +
-        (b.progress if b.status == "reading" and b.progress and b.total_pages else 0)
-        for b in books
-    )
+    total_pages_read = 0
+    for b in books:
+        if b.status == "completed" and b.total_pages:
+            total_pages_read += b.total_pages
+        elif b.status == "reading" and b.progress:
+            total_pages_read += b.progress
     
-    avg_reading_speed = 50
-    total_reading_time_minutes = total_pages_read // avg_reading_speed if avg_reading_speed > 0 else 0
-    reading_time_hours = total_reading_time_minutes // 60
+    pages_per_minute = 1
+    total_minutes_read = total_pages_read // pages_per_minute if pages_per_minute > 0 else 0
+    reading_time_hours = total_minutes_read // 60
     reading_time_days = reading_time_hours // 24
     
     stats = {
@@ -121,6 +122,7 @@ def get_profile(current_user: User = Depends(get_current_user), db: Session = De
     }
     return {"username": current_user.username, "email": current_user.email, "stats": stats}
 
+    
 @app.get("/list")
 def get_list(status: str = "all", current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     q = db.query(UserBook).filter(UserBook.user_id == current_user.id)

@@ -1,4 +1,4 @@
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../../../context/AuthContext'
 import Search from './Search.tsx'
 import s from './nav.module.css'
@@ -6,6 +6,7 @@ import s from './nav.module.css'
 function Nav() {
     const { user, logout } = useAuth()
     const navigate = useNavigate()
+    const location = useLocation()
     const hasAccount = localStorage.getItem("hasAccount")
 
     const toggleTheme = () => {
@@ -18,22 +19,23 @@ function Nav() {
         navigate("/")
     }
 
+    const isActive = (path: string) => location.pathname === path ? s.active : ""
+
     return (
         <div className={s.nav_outer}>
             <div className={s.nav_container}>
                 <Link to="/" className={s.logo}>Booker</Link>
 
                 <div className={s.middle_block}>
-                    <Link to="/list" className={s.nav_link}>List</Link>
-                    <Link to="/profile" className={s.nav_link}>Profile</Link>
-                    <Link to="/list" className={s.nav_link}>Friends</Link>
-                    <Link to="/list" className={s.nav_link}>Reviews</Link>
+                    <Link to="/list" className={`${s.nav_link} ${isActive("/list")}`}>list</Link>
+                    <Link to="/profile" className={`${s.nav_link} ${isActive("/profile")}`}>profile</Link>
+                    <Link to="/list" className={`${s.nav_link} ${isActive("/friends")}`}>friends</Link>
+                    <Link to="/list" className={`${s.nav_link} ${isActive("/reviews")}`}>reviews</Link>
                 </div>
 
                 <div className={s.right_block}>
                     <Search />
                     <button className={s.theme_btn} onClick={toggleTheme}>◑</button>
-
                     {user ? (
                         <>
                             <Link to="/profile" className={s.avatar_circle}>

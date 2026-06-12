@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom"
 import { useAuth } from "../../context/AuthContext"
 import { useToast } from "../../context/ToastContext"
 import StarRating from "../../components/StarRating"
-import AddCustomBook from "../../components/AddCustomBook"
+import AddCustomModal from "../../components/CustomAddModal"
 import Nav from "../home/components/nav/Nav"
 import s from "./booklist.module.css"
 
@@ -148,7 +148,7 @@ export default function BookList() {
             </div>
 
             {showModal && (
-                <AddCustomBook
+                <AddCustomModal
                     onClose={() => setShowModal(false)}
                     onAdded={fetchList}
                 />

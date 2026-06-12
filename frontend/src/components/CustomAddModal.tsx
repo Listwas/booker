@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
-import s from './addcustombook.module.css'
+import s from './customaddmodal.module.css'
 
 interface Props {
     onClose: () => void

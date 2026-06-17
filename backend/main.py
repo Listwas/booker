@@ -131,13 +131,30 @@ def get_list(status: str = "all", current_user: User = Depends(get_current_user)
     return q.all()
 
 
+@app.get("/list/ids")
+def get_list_ids(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    books = db.query(UserBook).filter(UserBook.user_id == current_user.id).all()
+    return {
+        "work_ids": [b.work_id for b in books],
+        "titles": [b.title for b in books],
+        "authors": [b.author for b in books],
+    }
+
+
 @app.post("/list")
 def add_book(body: BookEntry, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    existing = db.query(UserBook).filter(
-        UserBook.user_id == current_user.id,
-        UserBook.title == body.title,
-        UserBook.author == body.author
-    ).first()
+    existing = None
+    if body.work_id:
+        existing = db.query(UserBook).filter(
+            UserBook.user_id == current_user.id,
+            UserBook.work_id == body.work_id
+        ).first()
+    if not existing and not body.work_id:
+        existing = db.query(UserBook).filter(
+            UserBook.user_id == current_user.id,
+            UserBook.title == body.title,
+            UserBook.author == body.author
+        ).first()
     if existing:
         raise HTTPException(status_code=400, detail="Book already in your list")
     

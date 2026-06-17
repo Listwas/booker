@@ -100,13 +100,6 @@
     opacity: 0.85;
 }
 
-.add_btn.added {
-    background: none;
-    border: 1px solid var(--bg-dark-button-30);
-    color: var(--bg-dark-text-70);
-    cursor: default;
-}
-
 .loading {
     color: var(--bg-dark-text-70);
     padding: 48px 0;

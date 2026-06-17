@@ -20,6 +20,7 @@
     font-weight: 700;
     color: var(--bg-dark-text-95);
     margin-bottom: 8px;
+    text-decoration: none;
 }
 
 .toggle {

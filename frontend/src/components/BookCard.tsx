@@ -13,26 +13,30 @@ interface BookCardProps {
 }
 
 function BookCard({ title, author, cover, workId, hideAddButton = false }: BookCardProps) {
-    const { token } = useAuth()
+    const { token, listIds, refreshListIds } = useAuth()
     const { showToast } = useToast()
     const navigate = useNavigate()
     const [added, setAdded] = useState(false)
+    const [fetchingInfo, setFetchingInfo] = useState(false)
 
     useEffect(() => {
-        if (!token || !workId) return
-        fetch("http://127.0.0.1:8000/list?status=all", {
-            headers: { Authorization: `Bearer ${token}` }
-        })
-            .then(r => r.json())
-            .then(list => {
-                const exists = list.some((book: any) =>
-                    book.title.toLowerCase() === title.toLowerCase() &&
-                    book.author.toLowerCase() === author.toLowerCase()
-                )
-                setAdded(exists)
-            })
-            .catch(console.error)
-    }, [token, title, author, workId])
+        if (!listIds) {
+            setAdded(false)
+            return
+        }
+        let exists = false
+        if (workId) {
+            exists = listIds.work_ids.includes(workId)
+        } else {
+            const t = title.toLowerCase()
+            const a = author.toLowerCase()
+            exists = listIds.titles.some((lt, i) =>
+                lt.toLowerCase() === t &&
+                (listIds.authors[i] ?? "").toLowerCase() === a
+            )
+        }
+        setAdded(exists)
+    }, [listIds, workId, title, author])
 
     const handleAdd = async () => {
         if (!token) {
@@ -41,6 +45,24 @@ function BookCard({ title, author, cover, workId, hideAddButton = false }: BookC
             return
         }
         if (added) return
+
+        let totalPages: number | null = null
+        if (workId) {
+            setFetchingInfo(true)
+            showToast(`fetching book info...`)
+            try {
+                const metaRes = await fetch(`http://127.0.0.1:8000/book/${workId}/metadata`)
+                if (metaRes.ok) {
+                    const meta = await metaRes.json()
+                    totalPages = meta.total_pages ?? null
+                }
+            } catch (e) {
+                console.error(e)
+            } finally {
+                setFetchingInfo(false)
+            }
+        }
+
         const res = await fetch("http://127.0.0.1:8000/list", {
             method: "POST",
             headers: {
@@ -54,18 +76,20 @@ function BookCard({ title, author, cover, workId, hideAddButton = false }: BookC
                 status: "plan",
                 rating: null,
                 progress: null,
-                total_pages: null,
+                total_pages: totalPages,
                 work_id: workId || null
             })
         })
         if (res.ok) {
             setAdded(true)
             showToast(`"${title}" added to plan`)
+            refreshListIds()
         } else {
             const err = await res.json()
             if (err.detail === "Book already in your list") {
                 setAdded(true)
                 showToast(`"${title}" is already in your list`)
+                refreshListIds()
             }
         }
     }
@@ -97,9 +121,10 @@ function BookCard({ title, author, cover, workId, hideAddButton = false }: BookC
                         <button
                             className={`${styles.add_btn} ${added ? styles.added : ""}`}
                             onClick={handleAdd}
-                            title={added ? "added" : "add to list"}
+                            disabled={fetchingInfo}
+                            title={fetchingInfo ? "fetching book info..." : (added ? "added" : "add to list")}
                         >
-                            {added ? "✓" : "+"}
+                            {fetchingInfo ? "…" : (added ? "✓" : "+")}
                         </button>
                     )}
                 </div>

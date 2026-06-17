@@ -9,7 +9,7 @@ interface Props {
 }
 
 export default function AddCustomBook({ onClose, onAdded }: Props) {
-    const { token } = useAuth()
+    const { token, refreshListIds } = useAuth()
     const { showToast } = useToast()
     const [title, setTitle] = useState("")
     const [author, setAuthor] = useState("")
@@ -40,6 +40,7 @@ export default function AddCustomBook({ onClose, onAdded }: Props) {
         })
         if (res.ok) {
             showToast(`"${title}" added to list`)
+            refreshListIds()
             onAdded()
             onClose()
         }

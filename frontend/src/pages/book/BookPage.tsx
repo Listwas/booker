@@ -16,13 +16,6 @@ interface BookDetail {
     work_id: string
 }
 
-interface UserBook {
-    id: number
-    title: string
-    author: string
-    status: string
-}
-
 function seededRating(workId: string): number {
     let hash = 0
     for (let i = 0; i < workId.length; i++) {
@@ -34,11 +27,10 @@ function seededRating(workId: string): number {
 
 export default function BookPage() {
     const { workId } = useParams<{ workId: string }>()
-    const { token } = useAuth()
+    const { token, listIds, refreshListIds } = useAuth()
     const { showToast } = useToast()
     const [book, setBook] = useState<BookDetail | null>(null)
     const [added, setAdded] = useState(false)
-    const [existingBookId, setExistingBookId] = useState<number | null>(null)
 
     useEffect(() => {
         if (!workId) return
@@ -49,23 +41,12 @@ export default function BookPage() {
     }, [workId])
 
     useEffect(() => {
-        if (!token || !book) return
-        fetch("http://127.0.0.1:8000/list?status=all", {
-            headers: { Authorization: `Bearer ${token}` }
-        })
-            .then(r => r.json())
-            .then((list: UserBook[]) => {
-                const existing = list.find(
-                    item => item.title.toLowerCase() === book.title.toLowerCase() &&
-                            item.author.toLowerCase() === (book.authors[0] || "").toLowerCase()
-                )
-                if (existing) {
-                    setAdded(true)
-                    setExistingBookId(existing.id)
-                }
-            })
-            .catch(console.error)
-    }, [token, book])
+        if (!listIds || !workId) {
+            setAdded(false)
+            return
+        }
+        setAdded(listIds.work_ids.includes(workId))
+    }, [listIds, workId])
 
     const handleAdd = async () => {
         if (!token) {
@@ -86,14 +67,14 @@ export default function BookPage() {
                 status: "plan",
                 rating: null,
                 progress: null,
-                total_pages: null
+                total_pages: null,
+                work_id: workId
             })
         })
         if (res.ok) {
-            const newBook = await res.json()
             setAdded(true)
-            setExistingBookId(newBook.id)
             showToast(`"${book.title}" added to plan`)
+            refreshListIds()
         }
     }
 
@@ -142,7 +123,7 @@ export default function BookPage() {
                             <p className={s.description}>{book.description}</p>
                         )}
 
-                        {added && existingBookId ? (
+                        {added ? (
                             <Link to="/list" className={s.added_link}>
                                 ✓ already in your library – view list
                             </Link>

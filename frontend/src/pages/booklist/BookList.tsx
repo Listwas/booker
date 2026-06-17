@@ -34,6 +34,7 @@ export default function BookList() {
     const { token } = useAuth()
     const { showToast } = useToast()
     const navigate = useNavigate()
+    const [rawBooks, setRawBooks] = useState<Book[]>([])
     const [books, setBooks] = useState<Book[]>([])
     const [status, setStatus] = useState("plan")
     const [sort, setSort] = useState("recently added")
@@ -49,17 +50,7 @@ export default function BookList() {
             headers: { Authorization: `Bearer ${token}` }
         })
             .then(r => r.json())
-            .then(data => {
-                const sortedData = [...data]
-                if (sort === "title a-z") {
-                    sortedData.sort((a, b) => a.title.localeCompare(b.title))
-                } else if (sort === "author a-z") {
-                    sortedData.sort((a, b) => a.author.localeCompare(b.author))
-                } else if (sort === "rating") {
-                    sortedData.sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))
-                }
-                setBooks(sortedData)
-            })
+            .then(setRawBooks)
             .catch(console.error)
     }
 
@@ -69,8 +60,7 @@ export default function BookList() {
     }, [token, status])
 
     useEffect(() => {
-        if (books.length === 0) return
-        let sorted = [...books]
+        const sorted = [...rawBooks]
         if (sort === "title a-z") {
             sorted.sort((a, b) => a.title.localeCompare(b.title))
         } else if (sort === "author a-z") {
@@ -79,7 +69,7 @@ export default function BookList() {
             sorted.sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))
         }
         setBooks(sorted)
-    }, [sort])
+    }, [rawBooks, sort])
 
     const patch = async (id: number, data: Partial<Book>, showStatusToast: boolean = false, oldStatus?: string) => {
         const res = await fetch(`http://127.0.0.1:8000/list/${id}`, {
@@ -92,7 +82,7 @@ export default function BookList() {
         })
         if (res.ok) {
             const updated = await res.json()
-            setBooks(prev => prev.map(b => b.id === id ? { ...b, ...updated } : b))
+            setRawBooks(prev => prev.map(b => b.id === id ? { ...b, ...updated } : b))
             if (showStatusToast && data.status && oldStatus && data.status !== oldStatus) {
                 const statusLabel = STATUSES.find(s => s.key === data.status)?.label || data.status
                 showToast(`Status changed to ${statusLabel}`)
@@ -133,7 +123,7 @@ export default function BookList() {
             method: "DELETE",
             headers: { Authorization: `Bearer ${token}` }
         })
-        setBooks(prev => prev.filter(b => b.id !== id))
+        setRawBooks(prev => prev.filter(b => b.id !== id))
         showToast(`"${title}" removed`)
     }
 
@@ -145,7 +135,7 @@ export default function BookList() {
         })
         if (res.ok) {
             const data = await res.json()
-            setBooks(prev => prev.map(b =>
+            setRawBooks(prev => prev.map(b =>
                 b.id === id ? { ...b, rereads: data.rereads, progress: 0, status: "reading" } : b
             ))
             showToast(`"${title}" reread started`)

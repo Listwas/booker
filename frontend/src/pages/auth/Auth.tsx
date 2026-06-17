@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { useNavigate, useLocation } from "react-router-dom"
+import { useNavigate, useLocation, Link } from "react-router-dom"
 import { useAuth } from "../../context/AuthContext"
 import s from "./auth.module.css"
 
@@ -60,7 +60,7 @@ export default function Auth() {
     return (
         <div className={s.page}>
             <div className={s.box}>
-                <span className={s.logo}>Booker</span>
+                <Link to="/" className={s.logo}>Booker</Link>
 
                 <div className={s.toggle}>
                     <button onClick={() => { setMode("login"); setError(""); }} className={mode === "login" ? s.active : ""}>login</button>

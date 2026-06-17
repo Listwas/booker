@@ -248,6 +248,7 @@ def add_book(
     db.commit()
     db.refresh(entry)
 
+    # fetch page count in background so the response returns instantly
     if body.work_id and body.total_pages is None:
         background_tasks.add_task(_fetch_pages_background, entry.id, body.work_id)
 
@@ -364,7 +365,10 @@ def search_books(q: str, limit: int = 20):
 def get_book(work_id: str):
     cache_key = f"book_{work_id}"
     url = f"https://openlibrary.org/works/{work_id}.json"
-    data = _cached_get(cache_key, book_cache, url)
+    try:
+        data = _cached_get(cache_key, book_cache, url)
+    except Exception:
+        raise HTTPException(status_code=502, detail="couldn't reach openlibrary")
 
     description = data.get("description", "")
     if isinstance(description, dict):
@@ -376,10 +380,13 @@ def get_book(work_id: str):
     for a in data.get("authors", []):
         author_key = a.get("author", {}).get("key", "")
         if author_key:
-            author_data = _cached_get(
-                f"author_{author_key}", book_cache, f"https://openlibrary.org{author_key}.json"
-            )
-            authors.append(author_data.get("name", "Unknown"))
+            try:
+                author_data = _cached_get(
+                    f"author_{author_key}", book_cache, f"https://openlibrary.org{author_key}.json"
+                )
+                authors.append(author_data.get("name", "Unknown"))
+            except Exception:
+                authors.append("Unknown")
 
     covers = data.get("covers", [])
     cover = f"https://covers.openlibrary.org/b/id/{covers[0]}-L.jpg" if covers else ""

@@ -15,11 +15,12 @@ export default function BookPage() {
     const qc = useQueryClient()
     const [imgLoaded, setImgLoaded] = useState(false)
 
-    const { data: book, isLoading } = useQuery({
+    const { data: book, isLoading, error } = useQuery({
         queryKey: ["book", workId],
         queryFn: () => apiBook(workId!),
         enabled: !!workId,
         staleTime: 60 * 60 * 1000,
+        retry: 2,
     })
 
     const added = !!listIds && !!workId && listIds.work_ids.includes(workId)
@@ -49,12 +50,27 @@ export default function BookPage() {
         },
     })
 
-    if (isLoading || !book) {
+    if (isLoading) {
         return (
             <>
                 <Nav />
                 <div className={s.page}>
                     <p className={s.loading}>loading…</p>
+                </div>
+                <Footer />
+            </>
+        )
+    }
+
+    if (error || !book) {
+        return (
+            <>
+                <Nav />
+                <div className={s.page}>
+                    <Link to="/" className={s.back}>‹ back</Link>
+                    <p className={s.loading}>
+                        couldn't load this book. openlibrary might be slow, try again in a moment.
+                    </p>
                 </div>
                 <Footer />
             </>
@@ -111,7 +127,7 @@ export default function BookPage() {
 
                         {added ? (
                             <Link to="/list" className={s.added_link}>
-                                ✓ already in your library – view list
+                                ✓ already in your library, view list
                             </Link>
                         ) : (
                             <button

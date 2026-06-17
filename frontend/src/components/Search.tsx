@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import styles from './search.module.css'
+import styles from './Search.module.css'
 
 interface Result {
     title: string

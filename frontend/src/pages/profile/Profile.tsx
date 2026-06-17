@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react"
 import { Link } from "react-router-dom"
 import { useAuth } from "../../context/AuthContext"
-import Nav from "../home/components/nav/Nav"
+import Nav from "../../components/Nav"
 import BookCard from "../../components/BookCard"
-import s from "./profile.module.css"
+import s from "./Profile.module.css"
 
 interface Stats {
     total: number

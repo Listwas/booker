@@ -1,6 +1,6 @@
-import Nav from "./components/nav/Nav"
-import BookFeed from "./components/bookfeed/BookFeed"
-import s from "./home.module.css"
+import Nav from "../../components/Nav"
+import BookFeed from "./BookFeed"
+import s from "./Home.module.css"
 
 export default function Home() {
     return (

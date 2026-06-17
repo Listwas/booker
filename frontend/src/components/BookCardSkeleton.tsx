@@ -1,4 +1,4 @@
-import styles from './bookcard.module.css'
+import styles from './BookCard.module.css'
 
 function BookCardSkeleton() {
     return (

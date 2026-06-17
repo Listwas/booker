@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react'
-import styles from './bookfeed.module.css'
-import BookCard from '../../../../components/BookCard.tsx'
-import BookCardSkeleton from '../../../../components/BookCardSkeleton.tsx'
+import styles from './BookFeed.module.css'
+import BookCard from '../../components/BookCard.tsx'
+import BookCardSkeleton from '../../components/BookCardSkeleton.tsx'
 
 interface Book {
     title: string

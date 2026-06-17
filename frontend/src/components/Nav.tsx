@@ -1,7 +1,7 @@
 import { Link, useNavigate, useLocation } from 'react-router-dom'
-import { useAuth } from '../../../../context/AuthContext'
+import { useAuth } from '../context/AuthContext.tsx'
 import Search from './Search.tsx'
-import s from './nav.module.css'
+import s from './Nav.module.css'
 
 function Nav() {
     const { user, logout } = useAuth()

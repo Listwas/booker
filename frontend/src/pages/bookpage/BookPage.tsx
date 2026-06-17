@@ -2,9 +2,9 @@ import { useEffect, useState } from "react"
 import { useParams, Link } from "react-router-dom"
 import { useAuth } from "../../context/AuthContext"
 import { useToast } from "../../context/ToastContext"
-import Nav from "../home/components/nav/Nav"
+import Nav from "../../components/Nav"
 import StarRating from "../../components/StarRating"
-import s from "./book.module.css"
+import s from "./BookPage.module.css"
 
 interface BookDetail {
     title: string

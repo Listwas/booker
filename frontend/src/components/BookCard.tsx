@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
-import styles from './bookcard.module.css'
+import styles from './BookCard.module.css'
 
 interface BookCardProps {
     title: string

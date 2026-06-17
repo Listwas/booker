@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import Nav from '../home/components/nav/Nav'
+import Nav from '../../components/Nav'
 import BookCard from '../../components/BookCard'
-import s from './search_page.module.css'
+import s from './SearchPage.module.css'
 
 interface Book {
     title: string

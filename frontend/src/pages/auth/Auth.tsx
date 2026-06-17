@@ -1,7 +1,7 @@
 import { useState } from "react"
 import { useNavigate, useLocation, Link } from "react-router-dom"
 import { useAuth } from "../../context/AuthContext"
-import s from "./auth.module.css"
+import s from "./Auth.module.css"
 
 export default function Auth() {
     const location = useLocation()

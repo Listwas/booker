@@ -4,8 +4,8 @@ import { useAuth } from "../../context/AuthContext"
 import { useToast } from "../../context/ToastContext"
 import StarRating from "../../components/StarRating"
 import AddCustomModal from "../../components/CustomAddModal"
-import Nav from "../home/components/nav/Nav"
-import s from "./booklist.module.css"
+import Nav from "../../components/Nav"
+import s from "./BookList.module.css"
 
 interface Book {
     id: number

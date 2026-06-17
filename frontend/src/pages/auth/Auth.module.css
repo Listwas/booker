@@ -2,15 +2,17 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    height: 100vh;
+    flex: 1;
+    padding: 60px 20px;
 }
 
 .box {
     display: flex;
     flex-direction: column;
-    gap: 12px;
-    width: 320px;
-    padding: 32px;
+    gap: 18px;
+    width: 100%;
+    max-width: 400px;
+    padding: 40px;
     border: 3px solid var(--bg-dark-10);
     border-radius: 8px;
 }
@@ -21,6 +23,7 @@
     color: var(--bg-dark-text-95);
     margin-bottom: 8px;
     text-decoration: none;
+    text-align: center;
 }
 
 .toggle {
@@ -30,12 +33,19 @@
 
 .toggle button {
     flex: 1;
-    padding: 6px;
+    padding: 7px;
     background: none;
     border: 1px solid var(--bg-dark-80);
     border-radius: 4px;
     color: var(--bg-dark-text-70);
     cursor: pointer;
+    font-family: inherit;
+    font-size: 0.85rem;
+    transition: all 0.15s;
+}
+
+.toggle button:hover {
+    color: var(--bg-dark-text-95);
 }
 
 .toggle .active {
@@ -43,27 +53,86 @@
     border-color: var(--bg-dark-text-95);
 }
 
+.field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.field label {
+    font-size: 0.78rem;
+    color: var(--bg-dark-text-70);
+}
+
 .box input {
-    padding: 8px 10px;
+    padding: 9px 10px;
     background: var(--bg-dark-10);
     border: 1px solid var(--bg-dark-button-30);
     border-radius: 4px;
     color: var(--bg-dark-text-95);
-    font-size: 1rem;
+    font-size: 0.95rem;
+    font-family: inherit;
+    outline: none;
 }
 
-.submit {
-    padding: 8px;
-    background: var(--bg-dark-button-30);
-    border: none;
-    border-radius: 4px;
-    color: var(--bg-dark-text-95);
-    font-size: 1rem;
-    cursor: pointer;
-    margin-top: 4px;
+.box input:focus {
+    border-color: var(--bg-dark-80);
+}
+
+.box input.invalid {
+    border-color: hsl(0, 70%, 55%);
+}
+
+.hint {
+    font-size: 0.72rem;
+    color: var(--bg-dark-text-70);
+    margin: 0;
 }
 
 .error {
     color: hsl(0, 70%, 60%);
-    font-size: .85rem;
+    font-size: 0.78rem;
+    margin: 0;
+}
+
+.submit {
+    padding: 9px;
+    background: var(--bg-dark-button-30);
+    border: none;
+    border-radius: 4px;
+    color: var(--bg-dark-text-95);
+    font-size: 0.95rem;
+    cursor: pointer;
+    margin-top: 4px;
+    font-family: inherit;
+}
+
+.submit:hover {
+    background: var(--bg-dark-80);
+}
+
+.submit:disabled {
+    opacity: 0.6;
+    cursor: default;
+}
+
+.switch_text {
+    text-align: center;
+    font-size: 0.78rem;
+    color: var(--bg-dark-text-70);
+    margin: 0;
+}
+
+.switch_text button {
+    background: none;
+    border: none;
+    color: hsl(47, 92%, 53%);
+    cursor: pointer;
+    font-family: inherit;
+    font-size: inherit;
+    padding: 0;
+}
+
+.switch_text button:hover {
+    text-decoration: underline;
 }

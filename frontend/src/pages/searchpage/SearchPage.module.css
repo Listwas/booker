@@ -2,6 +2,8 @@
     max-width: 1060px;
     margin: 0 auto;
     padding: 32px 20px;
+    flex: 1;
+    width: 100%;
 }
 
 .heading {
@@ -16,13 +18,18 @@
 }
 
 .grid {
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
     gap: 16px;
+}
+
+.grid > * {
+    min-width: 0;
 }
 
 .empty {
     color: var(--bg-dark-text-70);
     padding: 48px 0;
     font-size: 0.95rem;
+    text-align: center;
 }

@@ -74,3 +74,8 @@
 .submit_btn:hover {
     background: var(--bg-dark-80);
 }
+
+.submit_btn:disabled {
+    opacity: 0.5;
+    cursor: default;
+}

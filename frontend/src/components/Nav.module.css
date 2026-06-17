@@ -15,6 +15,7 @@
     justify-content: space-between;
     height: 56px;
     padding: 0 20px;
+    gap: 12px;
 }
 
 .logo {
@@ -116,4 +117,22 @@
 
 .avatar_circle:hover {
     opacity: 0.8;
+}
+
+.footer {
+    margin-top: auto;
+    border-top: 1px solid var(--bg-dark-10);
+    padding: 20px;
+    text-align: center;
+    color: var(--bg-dark-text-70);
+    font-size: 0.75rem;
+}
+
+.footer a {
+    color: var(--bg-dark-text-70);
+    text-decoration: underline;
+}
+
+.footer a:hover {
+    color: var(--bg-dark-text-95);
 }

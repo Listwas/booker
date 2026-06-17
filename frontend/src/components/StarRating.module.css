@@ -1,16 +1,21 @@
-.stars {
+.s {
     display: flex;
     gap: 2px;
 }
 
 .star {
-    font-size: 1rem;
-    color: var(--bg-dark-button-30);
+    position: relative;
     line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    color: var(--bg-dark-button-30);
     transition: color 0.1s;
 }
 
-.star.filled {
+.star .fill {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
     color: var(--star-rating);
 }
 

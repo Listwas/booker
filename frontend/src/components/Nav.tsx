@@ -29,7 +29,6 @@ function Nav() {
                 <div className={s.middle_block}>
                     <Link to="/list" className={`${s.nav_link} ${isActive("/list")}`}>library</Link>
                     <Link to="/profile" className={`${s.nav_link} ${isActive("/profile")}`}>profile</Link>
-                    <Link to="/list" className={`${s.nav_link} ${isActive("/friends")}`}>friends</Link>
                 </div>
 
                 <div className={s.right_block}>
@@ -54,6 +53,16 @@ function Nav() {
                 </div>
             </div>
         </div>
+    )
+}
+
+export function Footer() {
+    return (
+        <footer className={s.footer + " app-footer"}>
+            booker · book data from{" "}
+            <a href="https://openlibrary.org" target="_blank" rel="noopener noreferrer">Open Library</a>{" "}
+            · a thesis project
+        </footer>
     )
 }
 

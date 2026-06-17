@@ -1,101 +1,82 @@
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { useParams, Link } from "react-router-dom"
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { useAuth } from "../../context/AuthContext"
 import { useToast } from "../../context/ToastContext"
-import Nav from "../../components/Nav"
+import Nav, { Footer } from "../../components/Nav"
 import StarRating from "../../components/StarRating"
+import { apiBook, apiAddBook, ApiError } from "../../lib/api"
 import s from "./BookPage.module.css"
-
-interface BookDetail {
-    title: string
-    authors: string[]
-    cover: string
-    description: string
-    subjects: string[]
-    first_publish_year: string
-    work_id: string
-}
-
-function seededRating(workId: string): number {
-    let hash = 0
-    for (let i = 0; i < workId.length; i++) {
-        hash = workId.charCodeAt(i) + ((hash << 5) - hash)
-    }
-    const val = (Math.abs(hash) % 30) / 10 + 2
-    return Math.round(val * 10) / 10
-}
 
 export default function BookPage() {
     const { workId } = useParams<{ workId: string }>()
-    const { token, listIds, refreshListIds } = useAuth()
+    const { token, listIds } = useAuth()
     const { showToast } = useToast()
-    const [book, setBook] = useState<BookDetail | null>(null)
-    const [added, setAdded] = useState(false)
+    const qc = useQueryClient()
+    const [imgLoaded, setImgLoaded] = useState(false)
 
-    useEffect(() => {
-        if (!workId) return
-        fetch(`http://127.0.0.1:8000/book/${workId}`)
-            .then(r => r.json())
-            .then(setBook)
-            .catch(console.error)
-    }, [workId])
+    const { data: book, isLoading } = useQuery({
+        queryKey: ["book", workId],
+        queryFn: () => apiBook(workId!),
+        enabled: !!workId,
+        staleTime: 60 * 60 * 1000,
+    })
 
-    useEffect(() => {
-        if (!listIds || !workId) {
-            setAdded(false)
-            return
-        }
-        setAdded(listIds.work_ids.includes(workId))
-    }, [listIds, workId])
+    const added = !!listIds && !!workId && listIds.work_ids.includes(workId)
 
-    const handleAdd = async () => {
-        if (!token) {
-            showToast("Please login to add books")
-            return
-        }
-        if (!book || added) return
-        const res = await fetch("http://127.0.0.1:8000/list", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`
-            },
-            body: JSON.stringify({
-                title: book.title,
-                author: book.authors[0] ?? "Unknown",
-                cover: book.cover,
+    const addMutation = useMutation({
+        mutationFn: () =>
+            apiAddBook(token!, {
+                title: book!.title,
+                author: book!.authors[0] ?? "Unknown",
+                cover: book!.cover,
                 status: "plan",
-                rating: null,
-                progress: null,
-                total_pages: null,
-                work_id: workId
-            })
-        })
-        if (res.ok) {
-            setAdded(true)
-            showToast(`"${book.title}" added to plan`)
-            refreshListIds()
-        }
+                work_id: workId,
+            }),
+        onSuccess: async () => {
+            showToast(`"${book!.title}" added to your library`)
+            await qc.invalidateQueries({ queryKey: ["list"] })
+            await qc.invalidateQueries({ queryKey: ["listIds"] })
+            await qc.invalidateQueries({ queryKey: ["profile"] })
+        },
+        onError: (err) => {
+            if (err instanceof ApiError && err.status === 400) {
+                showToast(err.message)
+                qc.invalidateQueries({ queryKey: ["listIds"] })
+            } else {
+                showToast("Failed to add book")
+            }
+        },
+    })
+
+    if (isLoading || !book) {
+        return (
+            <>
+                <Nav />
+                <div className={s.page}>
+                    <p className={s.loading}>loading…</p>
+                </div>
+                <Footer />
+            </>
+        )
     }
-
-    if (!book) return (
-        <>
-            <Nav />
-            <div className={s.page}>
-                <p className={s.loading}>loading...</p>
-            </div>
-        </>
-    )
-
-    const communityRating = seededRating(workId ?? "")
 
     return (
         <>
             <Nav />
             <div className={s.page}>
+                <Link to="/" className={s.back}>‹ back</Link>
                 <div className={s.content}>
                     <div className={s.cover}>
-                        {book.cover && <img src={book.cover} alt={book.title} />}
+                        {book.cover && (
+                            <img
+                                src={book.cover}
+                                alt={`Cover of ${book.title}`}
+                                onLoad={() => setImgLoaded(true)}
+                                data-loaded={imgLoaded}
+                                className="book-cover"
+                            />
+                        )}
                     </div>
 
                     <div className={s.info}>
@@ -103,8 +84,13 @@ export default function BookPage() {
                         <p className={s.authors}>{book.authors.join(", ")}</p>
 
                         <div className={s.rating_row}>
-                            <StarRating value={communityRating} readonly />
-                            <span className={s.rating_label}>community rating</span>
+                            <StarRating value={book.community.rating} readonly size={18} />
+                            <span className={s.rating_label}>
+                                {book.community.rating.toFixed(1)}
+                            </span>
+                            <span className={s.rating_count}>
+                                {book.community.count.toLocaleString()} reviews
+                            </span>
                         </div>
 
                         {book.first_publish_year && (
@@ -130,14 +116,26 @@ export default function BookPage() {
                         ) : (
                             <button
                                 className={s.add_btn}
-                                onClick={handleAdd}
+                                onClick={() => {
+                                    if (!token) {
+                                        showToast("Please login to add books")
+                                        return
+                                    }
+                                    addMutation.mutate()
+                                }}
+                                disabled={addMutation.isPending}
                             >
-                                {token ? "add to library" : "login to add"}
+                                {addMutation.isPending
+                                    ? "adding…"
+                                    : token
+                                    ? "add to library"
+                                    : "login to add"}
                             </button>
                         )}
                     </div>
                 </div>
             </div>
+            <Footer />
         </>
     )
 }

@@ -1,31 +1,23 @@
-import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import Nav from '../../components/Nav'
+import { useQuery } from '@tanstack/react-query'
+import Nav, { Footer } from '../../components/Nav'
 import BookCard from '../../components/BookCard'
+import BookCardSkeleton from '../../components/BookCardSkeleton'
+import { apiSearch } from '../../lib/api'
 import s from './SearchPage.module.css'
-
-interface Book {
-    title: string
-    author: string
-    cover: string
-    work_id: string
-}
 
 export default function SearchPage() {
     const [params] = useSearchParams()
     const q = params.get("q") ?? ""
-    const [books, setBooks] = useState<Book[]>([])
-    const [loading, setLoading] = useState(false)
 
-    useEffect(() => {
-        if (!q) return
-        setLoading(true)
-        fetch(`http://127.0.0.1:8000/search?q=${encodeURIComponent(q)}`)
-            .then(r => r.json())
-            .then(d => setBooks(d.books))
-            .catch(console.error)
-            .finally(() => setLoading(false))
-    }, [q])
+    const { data, isLoading } = useQuery({
+        queryKey: ["search", q],
+        queryFn: () => apiSearch(q),
+        enabled: q.trim().length > 0,
+        staleTime: 5 * 60 * 1000,
+    })
+
+    const books = data?.books ?? []
 
     return (
         <>
@@ -34,17 +26,23 @@ export default function SearchPage() {
                 <p className={s.heading}>
                     results for <span>"{q}"</span>
                 </p>
-                {loading
-                    ? <p className={s.empty}>searching...</p>
-                    : books.length === 0
-                        ? <p className={s.empty}>nothing found</p>
-                        : <div className={s.grid}>
-                            {books.map((b, i) => (
-                                <BookCard key={i} title={b.title} author={b.author} cover={b.cover} workId={b.work_id}/>
-                            ))}
-                        </div>
-                }
+                {isLoading ? (
+                    <div className={s.grid}>
+                        {Array.from({ length: 10 }).map((_, i) => (
+                            <BookCardSkeleton key={i} />
+                        ))}
+                    </div>
+                ) : books.length === 0 ? (
+                    <p className={s.empty}>nothing found</p>
+                ) : (
+                    <div className={s.grid}>
+                        {books.map((b) => (
+                            <BookCard key={b.work_id} book={b} />
+                        ))}
+                    </div>
+                )}
             </div>
+            <Footer />
         </>
     )
 }

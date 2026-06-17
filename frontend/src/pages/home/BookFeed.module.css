@@ -8,6 +8,7 @@
     font-size: 1.1rem;
     font-weight: 600;
     color: var(--bg-dark-text-95);
+    text-transform: capitalize;
 }
 
 .carousel_wrapper {
@@ -17,25 +18,38 @@
 
 .cards_row {
     display: flex;
-    overflow-x: hidden;
+    overflow-x: auto;
     scroll-behavior: smooth;
     gap: 16px;
+    padding-bottom: 8px;
+}
+
+.cards_row::-webkit-scrollbar {
+    height: 8px;
+}
+.cards_row::-webkit-scrollbar-thumb {
+    background: var(--bg-dark-button-30);
+    border-radius: 999px;
+}
+
+.card_wrap {
+    flex: 0 0 180px;
 }
 
 .arrow {
     position: absolute;
     top: 0;
     height: 100%;
-    width: 48px;
-    background: linear-gradient(to right, var(--bg-dark-0), transparent);
+    width: 40px;
+    background: rgba(0, 0, 0, 0.5);
     border: none;
     cursor: pointer;
-    opacity: 0;
+    opacity: 0.4;
     transition: opacity 0.2s;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.8rem;
+    font-size: 1.6rem;
     color: var(--bg-dark-text-95);
     z-index: 10;
 }
@@ -44,12 +58,23 @@
     opacity: 1;
 }
 
+.arrow:hover {
+    background: rgba(0, 0, 0, 0.7);
+}
+
 .arrow_left {
     left: 0;
-    background: linear-gradient(to right, var(--bg-dark-0), transparent);
 }
 
 .arrow_right {
     right: 0;
-    background: linear-gradient(to left, var(--bg-dark-0), transparent);
+}
+
+[data-theme="light"] .arrow {
+    background: rgba(255, 255, 255, 0.6);
+    color: var(--bg-dark-text-95);
+}
+
+[data-theme="light"] .arrow:hover {
+    background: rgba(255, 255, 255, 0.85);
 }

@@ -1,36 +1,41 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import s from './StarRating.module.css'
 
 interface StarRatingProps {
     value: number | null
     onChange?: (v: number) => void
     readonly?: boolean
+    size?: number
 }
 
-export default function StarRating({ value, onChange, readonly = false }: StarRatingProps) {
-    const [internalValue, setInternalValue] = useState<number | null>(value)
-
-    useEffect(() => {
-        setInternalValue(value)
-    }, [value])
+export default function StarRating({ value, onChange, readonly = false, size = 16 }: StarRatingProps) {
+    const [internal, setInternal] = useState<number | null>(value)
+    const display = internal ?? 0
 
     const handleClick = (rating: number) => {
         if (readonly) return
-        setInternalValue(rating)
-        onChange?.(rating)
+        // toggle off if clicking the same value
+        const next = internal === rating ? null : rating
+        setInternal(next)
+        if (next !== null) onChange?.(next)
     }
 
     return (
-        <div className={s.stars}>
-            {[1, 2, 3, 4, 5].map(i => (
-                <span
-                    key={i}
-                    className={`${s.star} ${internalValue && i <= internalValue ? s.filled : ""} ${readonly ? "" : s.clickable}`}
-                    onClick={() => handleClick(i)}
-                >
-                    ★
-                </span>
-            ))}
+        <div className={s.s} role={readonly ? "img" : "radiogroup"} aria-label={`Rating ${display} out of 5`}>
+            {[1, 2, 3, 4, 5].map((i) => {
+                const fillPct = Math.max(0, Math.min(1, display - (i - 1))) * 100
+                return (
+                    <span
+                        key={i}
+                        className={`${s.star} ${readonly ? "" : s.clickable}`}
+                        onClick={() => handleClick(i)}
+                        style={{ fontSize: `${size}px` }}
+                    >
+                        <span aria-hidden>★</span>
+                        <span className={s.fill} style={{ width: `${fillPct}%` }} aria-hidden>★</span>
+                    </span>
+                )
+            })}
         </div>
     )
 }

@@ -1,135 +1,109 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
+import { apiAddBook, ApiError } from '../lib/api'
+import type { OpenLibraryBook } from '../lib/types'
+import StarRating from './StarRating'
 import styles from './BookCard.module.css'
 
 interface BookCardProps {
-    title: string
-    author: string
-    cover: string
-    workId?: string
+    book: OpenLibraryBook
     hideAddButton?: boolean
 }
 
-function BookCard({ title, author, cover, workId, hideAddButton = false }: BookCardProps) {
-    const { token, listIds, refreshListIds } = useAuth()
+function BookCard({ book, hideAddButton = false }: BookCardProps) {
+    const { title, author, cover, work_id, community } = book
+    const { token, listIds } = useAuth()
     const { showToast } = useToast()
     const navigate = useNavigate()
-    const [added, setAdded] = useState(false)
-    const [fetchingInfo, setFetchingInfo] = useState(false)
+    const qc = useQueryClient()
+    const [imgLoaded, setImgLoaded] = useState(false)
 
-    useEffect(() => {
-        if (!listIds) {
-            setAdded(false)
-            return
-        }
-        let exists = false
-        if (workId) {
-            exists = listIds.work_ids.includes(workId)
-        } else {
-            const t = title.toLowerCase()
-            const a = author.toLowerCase()
-            exists = listIds.titles.some((lt, i) =>
-                lt.toLowerCase() === t &&
-                (listIds.authors[i] ?? "").toLowerCase() === a
-            )
-        }
-        setAdded(exists)
-    }, [listIds, workId, title, author])
+    const added = (() => {
+        if (!listIds) return false
+        if (work_id && listIds.work_ids.includes(work_id)) return true
+        const t = title.toLowerCase()
+        const a = author.toLowerCase()
+        return listIds.titles.some(
+            (lt, i) => lt.toLowerCase() === t && (listIds.authors[i] ?? "").toLowerCase() === a
+        )
+    })()
 
-    const handleAdd = async () => {
-        if (!token) {
-            showToast("Please login to add books to your list")
-            navigate("/auth", { state: { mode: "login" } })
-            return
-        }
-        if (added) return
-
-        let totalPages: number | null = null
-        if (workId) {
-            setFetchingInfo(true)
-            showToast(`fetching book info...`)
-            try {
-                const metaRes = await fetch(`http://127.0.0.1:8000/book/${workId}/metadata`)
-                if (metaRes.ok) {
-                    const meta = await metaRes.json()
-                    totalPages = meta.total_pages ?? null
-                }
-            } catch (e) {
-                console.error(e)
-            } finally {
-                setFetchingInfo(false)
-            }
-        }
-
-        const res = await fetch("http://127.0.0.1:8000/list", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`
-            },
-            body: JSON.stringify({
+    const addMutation = useMutation({
+        mutationFn: () =>
+            apiAddBook(token!, {
                 title,
                 author,
                 cover,
                 status: "plan",
                 rating: null,
                 progress: null,
-                total_pages: totalPages,
-                work_id: workId || null
-            })
-        })
-        if (res.ok) {
-            setAdded(true)
-            showToast(`"${title}" added to plan`)
-            refreshListIds()
-        } else {
-            const err = await res.json()
-            if (err.detail === "Book already in your list") {
-                setAdded(true)
-                showToast(`"${title}" is already in your list`)
-                refreshListIds()
+                total_pages: null,
+                work_id,
+            }),
+        onSuccess: async () => {
+            showToast(`"${title}" added to your library`)
+            await qc.invalidateQueries({ queryKey: ["list"] })
+            await qc.invalidateQueries({ queryKey: ["listIds"] })
+            await qc.invalidateQueries({ queryKey: ["profile"] })
+        },
+        onError: (err) => {
+            if (err instanceof ApiError && err.status === 400 && err.message.includes("already")) {
+                showToast(`"${title}" is already in your library`)
+                qc.invalidateQueries({ queryKey: ["listIds"] })
+                return
             }
+            showToast(err instanceof Error ? err.message : "Failed to add book")
+        },
+    })
+
+    const handleAdd = () => {
+        if (!token) {
+            showToast("Please login to add books to your library")
+            navigate("/auth", { state: { mode: "login" } })
+            return
         }
+        if (added) return
+        addMutation.mutate()
     }
 
-    const handleCardClick = () => {
-        if (workId) {
-            navigate(`/book/${workId}`)
-        } else {
-            navigate(`/search?q=${encodeURIComponent(title)}`)
-        }
-    }
+    const open = () => navigate(`/book/${work_id}`)
 
     return (
         <div className={styles.bookcard_container}>
-            <div
-                className={styles.cover_container}
-                onClick={handleCardClick}
-                style={{ cursor: "pointer" }}
-            >
-                <img src={cover} alt={title} />
+            <div className={styles.cover_container} onClick={open}>
+                <img
+                    src={cover}
+                    alt={`Cover of ${title}`}
+                    loading="lazy"
+                    onLoad={() => setImgLoaded(true)}
+                    data-loaded={imgLoaded}
+                    className="book-cover"
+                />
             </div>
 
             <div className={styles.info_card}>
                 <div className={styles.top_part}>
-                    <span className={styles.star}>★</span>
-                    <span className={styles.rating_score}>8.4</span>
-                    <span className={styles.rating_count}>(2134)</span>
+                    <StarRating value={community.rating} readonly size={13} />
+                    <span className={styles.rating_score}>{community.rating.toFixed(1)}</span>
+                    <span className={styles.rating_count}>
+                        ({community.count.toLocaleString()})
+                    </span>
                     {!hideAddButton && (
                         <button
                             className={`${styles.add_btn} ${added ? styles.added : ""}`}
                             onClick={handleAdd}
-                            disabled={fetchingInfo}
-                            title={fetchingInfo ? "fetching book info..." : (added ? "added" : "add to list")}
+                            disabled={added || addMutation.isPending}
+                            title={added ? "in your library" : "add to library"}
                         >
-                            {fetchingInfo ? "…" : (added ? "✓" : "+")}
+                            {addMutation.isPending ? "…" : added ? "✓" : "+"}
                         </button>
                     )}
                 </div>
 
-                <div className={styles.bottom_part} onClick={handleCardClick} style={{ cursor: "pointer" }}>
+                <div className={styles.bottom_part} onClick={open}>
                     <span className={styles.author}>{author}</span>
                     <p className={styles.title}>{title}</p>
                 </div>

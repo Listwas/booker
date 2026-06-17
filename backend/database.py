@@ -1,4 +1,5 @@
-from sqlalchemy import create_engine, Column, Integer, String, Float
+from datetime import datetime
+from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
@@ -25,13 +26,15 @@ class UserBook(Base):
     user_id = Column(Integer, index=True)
     title = Column(String)
     author = Column(String)
-    cover = Column(String)
-    status = Column(String)
+    cover = Column(String, default="")
+    status = Column(String, default="plan")
     rating = Column(Float, nullable=True)
     progress = Column(Integer, nullable=True)
     total_pages = Column(Integer, nullable=True)
     rereads = Column(Integer, default=0)
     work_id = Column(String, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 
 Base.metadata.create_all(bind=engine)

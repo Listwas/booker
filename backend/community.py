@@ -1,22 +1,35 @@
-"""Deterministic seeded community rating.
+"""Community ratings, aggregated from what users actually rated.
 
-Replaces the hardcoded "8.4 (2134)" that used to live on every BookCard.
-Every book gets a stable, realistic-looking average (3.0-4.9) and review
-count derived from its work_id, so the same book always shows the same
-rating on the card, the search results and the detail page.
+Unrated books get rating=None so the UI can show "no ratings yet".
 """
 
+from sqlalchemy import func
+from sqlalchemy.orm import Session
 
-def _hash_string(s: str) -> int:
-    h = 0
-    for ch in s:
-        h = ord(ch) + ((h << 5) - h)
-        h &= 0xFFFFFFFF
-    return abs(h)
+from database import UserBook
 
 
-def community_rating(work_id: str | None) -> dict:
-    seed = _hash_string(work_id or "unknown-book")
-    rating = round(3 + (seed % 20) / 10, 1)
-    count = 8 + (seed % 3120)
-    return {"rating": rating, "count": count}
+def community_ratings(db: Session, work_ids: list[str]) -> dict[str, dict]:
+    """One aggregate query for a whole batch (feeds, search results)."""
+    ids = [w for w in work_ids if w]
+    if not ids:
+        return {}
+    rows = (
+        db.query(
+            UserBook.work_id,
+            func.avg(UserBook.rating),
+            func.count(UserBook.rating),
+        )
+        .filter(UserBook.work_id.in_(ids), UserBook.rating.isnot(None))
+        .group_by(UserBook.work_id)
+        .all()
+    )
+    return {work_id: {"rating": round(avg, 1), "count": count} for work_id, avg, count in rows}
+
+
+def community_rating(db: Session, work_id: str | None) -> dict:
+    if work_id:
+        found = community_ratings(db, [work_id]).get(work_id)
+        if found:
+            return found
+    return {"rating": None, "count": 0}

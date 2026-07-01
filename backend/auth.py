@@ -1,10 +1,11 @@
-from datetime import datetime, timedelta
+import os
+from datetime import datetime, timedelta, timezone
 from jose import JWTError, jwt
 from argon2 import PasswordHasher
 from argon2.exceptions import VerifyMismatchError
 
-# read from env in a real deployment
-SECRET_KEY = "booker-secret-change-later"
+# dev fallback, set BOOKER_SECRET_KEY in a real deployment
+SECRET_KEY = os.environ.get("BOOKER_SECRET_KEY", "booker-dev-secret")
 ALGORITHM = "HS256"
 EXPIRE_MINUTES = 60 * 24
 
@@ -23,7 +24,7 @@ def verify_password(plain: str, hashed: str):
 
 
 def create_token(username: str):
-    payload = {"sub": username, "exp": datetime.utcnow() + timedelta(minutes=EXPIRE_MINUTES)}
+    payload = {"sub": username, "exp": datetime.now(timezone.utc) + timedelta(minutes=EXPIRE_MINUTES)}
     return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
 
 

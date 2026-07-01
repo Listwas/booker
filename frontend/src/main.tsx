@@ -1,16 +1,18 @@
-import { StrictMode } from 'react'
+import { StrictMode, Suspense, lazy } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { AuthProvider } from './context/AuthContext'
 import { ToastProvider } from './context/ToastContext'
 import Home from './pages/home/Home.tsx'
-import BookList from './pages/booklist/BookList.tsx'
-import Auth from './pages/auth/Auth.tsx'
-import Profile from './pages/profile/Profile.tsx'
-import SearchPage from './pages/searchpage/SearchPage.tsx'
-import BookPage from './pages/bookpage/BookPage.tsx'
 import './index.css'
+
+// home is the landing page, the rest load on first visit
+const BookList = lazy(() => import('./pages/booklist/BookList.tsx'))
+const Auth = lazy(() => import('./pages/auth/Auth.tsx'))
+const Profile = lazy(() => import('./pages/profile/Profile.tsx'))
+const SearchPage = lazy(() => import('./pages/searchpage/SearchPage.tsx'))
+const BookPage = lazy(() => import('./pages/bookpage/BookPage.tsx'))
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -29,14 +31,16 @@ createRoot(document.getElementById('root')!).render(
       <AuthProvider>
         <ToastProvider>
           <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/list" element={<BookList />} />
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/profile" element={<Profile />} />
-              <Route path="/search" element={<SearchPage />} />
-              <Route path="/book/:workId" element={<BookPage />} />
-            </Routes>
+            <Suspense fallback={null}>
+              <Routes>
+                <Route path="/" element={<Home />} />
+                <Route path="/list" element={<BookList />} />
+                <Route path="/auth" element={<Auth />} />
+                <Route path="/profile" element={<Profile />} />
+                <Route path="/search" element={<SearchPage />} />
+                <Route path="/book/:workId" element={<BookPage />} />
+              </Routes>
+            </Suspense>
           </BrowserRouter>
         </ToastProvider>
       </AuthProvider>

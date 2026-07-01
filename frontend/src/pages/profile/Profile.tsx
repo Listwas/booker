@@ -4,9 +4,37 @@ import { useAuth } from "../../context/AuthContext"
 import Nav, { Footer } from "../../components/Nav"
 import BookCard from "../../components/BookCard"
 import { apiProfile, apiList } from "../../lib/api"
-import { communityRating } from "../../lib/ratings"
-import type { ProfileData, UserBook } from "../../lib/types"
+import type { MonthlyStat, ProfileData, UserBook } from "../../lib/types"
 import s from "./Profile.module.css"
+
+const MONTH_LABELS = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"]
+
+function MonthlyChart({ monthly }: { monthly: MonthlyStat[] }) {
+    if (monthly.every((m) => m.books === 0)) return null
+    const max = Math.max(...monthly.map((m) => m.books))
+
+    return (
+        <section className={s.stats_section}>
+            <p className={s.section_title}>books finished per month</p>
+            <div className={s.chart}>
+                {monthly.map((m) => {
+                    const monthIdx = parseInt(m.month.slice(5), 10) - 1
+                    return (
+                        <div className={s.chart_col} key={m.month}>
+                            <span className={s.chart_value}>{m.books > 0 ? m.books : ""}</span>
+                            <div
+                                className={s.chart_bar}
+                                style={{ height: `${(m.books / max) * 100}%` }}
+                                title={`${m.month}: ${m.books} books, ${m.pages.toLocaleString()} pages`}
+                            />
+                            <span className={s.chart_label}>{MONTH_LABELS[monthIdx] ?? m.month}</span>
+                        </div>
+                    )
+                })}
+            </div>
+        </section>
+    )
+}
 
 const SEGMENTS = [
     { key: "reading", cls: s.seg_reading, label: "reading" },
@@ -141,6 +169,8 @@ export default function Profile() {
                     )}
                 </section>
 
+                <MonthlyChart monthly={data.monthly ?? []} />
+
                 {recent.length > 0 && (
                     <section className={s.recent_section}>
                         <p className={s.section_title}>recently added</p>
@@ -153,7 +183,7 @@ export default function Profile() {
                                         author: b.author,
                                         cover: b.cover,
                                         work_id: b.work_id ?? "",
-                                        community: communityRating(b.work_id),
+                                        community: b.community ?? { rating: null, count: 0 },
                                     }}
                                     hideAddButton
                                 />

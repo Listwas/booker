@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react"
+import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { useAuth } from "../../context/AuthContext"
@@ -12,37 +12,15 @@ import {
     apiDeleteBook,
     apiReread,
     apiResetReread,
-    apiBookMeta,
     apiDemo,
     ApiError,
+    type BookPatch,
 } from "../../lib/api"
+import { SORTS, sortBooks, type SortKey } from "../../lib/sort"
 import { STATUSES, STATUS_COLORS, type BookStatus, type UserBook } from "../../lib/types"
 import s from "./BookList.module.css"
 
-const SORTS = [
-    { key: "recent", label: "recently added" },
-    { key: "title", label: "title a-z" },
-    { key: "author", label: "author a-z" },
-    { key: "rating", label: "rating" },
-] as const
-
-type SortKey = (typeof SORTS)[number]["key"]
-
-function sortBooks(books: UserBook[], sort: SortKey): UserBook[] {
-    const copy = [...books]
-    switch (sort) {
-        case "title":
-            return copy.sort((a, b) => a.title.localeCompare(b.title))
-        case "author":
-            return copy.sort((a, b) => a.author.localeCompare(b.author))
-        case "rating":
-            return copy.sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))
-        default:
-            return copy.sort(
-                (a, b) => +new Date(b.created_at ?? 0) - +new Date(a.created_at ?? 0)
-            )
-    }
-}
+const LIST_KEY = ["list", "all"] as const
 
 export default function BookList() {
     const { user, token, loading } = useAuth()
@@ -93,9 +71,7 @@ function GuestLibrary({ onCta }: { onCta: () => void }) {
                 </div>
 
                 <div className={s.library_header}>
-                    <span style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--bg-dark-text-95)" }}>
-                        demo_reader's library
-                    </span>
+                    <span className={s.library_owner}>demo_reader's library</span>
                     <span className={s.readonly_badge}>read-only</span>
                 </div>
 
@@ -125,20 +101,12 @@ function GuestLibrary({ onCta }: { onCta: () => void }) {
                                             )}
                                         </div>
                                         <StarRating value={b.rating} readonly size={14} />
-                                        <span style={{ fontSize: "0.8rem", color: "var(--bg-dark-text-70)" }}>
+                                        <span className={s.pages_static}>
                                             {b.progress ?? 0} / {b.total_pages ?? "?"}
                                         </span>
                                         <span
-                                            style={{
-                                                backgroundColor: `${color}20`,
-                                                color,
-                                                padding: "4px 10px",
-                                                borderRadius: "999px",
-                                                fontSize: "0.75rem",
-                                                fontWeight: 500,
-                                                display: "inline-block",
-                                                width: "fit-content",
-                                            }}
+                                            className={s.status_pill}
+                                            style={{ backgroundColor: `${color}20`, color }}
                                         >
                                             {b.status}
                                         </span>
@@ -161,78 +129,70 @@ function UserLibrary({ token }: { token: string }) {
     const [status, setStatus] = useState<BookStatus | "all">("all")
     const [sort, setSort] = useState<SortKey>("recent")
     const [showModal, setShowModal] = useState(false)
-    const fetchedPagesRef = useRef<Set<number>>(new Set())
 
+    // fetch once, filter/sort client-side so switching tabs is instant
     const { data, isLoading, isFetching, refetch } = useQuery({
-        queryKey: ["list", status],
-        queryFn: () => apiList(token, status),
+        queryKey: LIST_KEY,
+        queryFn: () => apiList(token, "all"),
         staleTime: 30 * 1000,
     })
 
-    const books = sortBooks(data ?? [], sort)
+    const all = data ?? []
+    const filtered = status === "all" ? all : all.filter((b) => b.status === status)
+    const books = sortBooks(filtered, sort)
 
-    useEffect(() => {
-        if (!data) return
-        const needing = data.filter(
-            (b) => b.work_id && b.total_pages == null && !fetchedPagesRef.current.has(b.id)
+    const counts = all.reduce<Record<string, number>>((acc, b) => {
+        acc[b.status] = (acc[b.status] ?? 0) + 1
+        return acc
+    }, { all: all.length })
+
+    const setBook = (updated: UserBook) => {
+        qc.setQueryData<UserBook[]>(LIST_KEY, (old) =>
+            old ? old.map((b) => (b.id === updated.id ? updated : b)) : [updated]
         )
-        if (needing.length === 0) return
-
-        let cancelled = false
-        ;(async () => {
-            await Promise.allSettled(
-                needing.map(async (b) => {
-                    fetchedPagesRef.current.add(b.id)
-                    try {
-                        const meta = await apiBookMeta(b.work_id!)
-                        if (cancelled) return
-                        if (meta.total_pages) {
-                            await apiPatchBook(token, b.id, { total_pages: meta.total_pages })
-                        }
-                    } catch {
-                        // leave as unknown
-                    }
-                })
-            )
-            if (!cancelled) {
-                await qc.invalidateQueries({ queryKey: ["list"] })
-            }
-        })()
-        return () => {
-            cancelled = true
-        }
-    }, [data, token, qc])
+    }
 
     const patchMutation = useMutation({
-        mutationFn: ({ id, body }: { id: number; body: Partial<UserBook> }) =>
+        mutationFn: ({ id, body }: { id: number; body: BookPatch }) =>
             apiPatchBook(token, id, body),
-        onSuccess: async (updated) => {
-            qc.setQueryData<UserBook[]>(["list", status], (old) =>
-                old ? old.map((b) => (b.id === updated.id ? updated : b)) : [updated]
+        // optimistic update, rolled back on error
+        onMutate: async ({ id, body }) => {
+            await qc.cancelQueries({ queryKey: LIST_KEY })
+            const prev = qc.getQueryData<UserBook[]>(LIST_KEY)
+            qc.setQueryData<UserBook[]>(LIST_KEY, (old) =>
+                old?.map((b) => {
+                    if (b.id !== id) return b
+                    const { clear_rating, ...rest } = body
+                    return { ...b, ...rest, ...(clear_rating ? { rating: null } : {}) }
+                })
             )
-            await qc.invalidateQueries({ queryKey: ["profile"] })
+            return { prev }
         },
-        onError: (err) => {
-            showToast(err instanceof ApiError ? err.message : "Update failed")
+        onError: (err, _vars, ctx) => {
+            if (ctx?.prev) qc.setQueryData(LIST_KEY, ctx.prev)
+            showToast(err instanceof ApiError ? err.message : "Update failed", "error")
+        },
+        onSuccess: (updated) => {
+            setBook(updated)
+            qc.invalidateQueries({ queryKey: ["profile"] })
         },
     })
 
     const deleteMutation = useMutation({
         mutationFn: (id: number) => apiDeleteBook(token, id),
         onMutate: async (id) => {
-            await qc.cancelQueries({ queryKey: ["list", status] })
-            const prev = qc.getQueryData<UserBook[]>(["list", status])
-            qc.setQueryData<UserBook[]>(["list", status], (old) =>
+            await qc.cancelQueries({ queryKey: LIST_KEY })
+            const prev = qc.getQueryData<UserBook[]>(LIST_KEY)
+            qc.setQueryData<UserBook[]>(LIST_KEY, (old) =>
                 old ? old.filter((b) => b.id !== id) : []
             )
             return { prev }
         },
         onError: (_e, _id, ctx) => {
-            if (ctx?.prev) qc.setQueryData(["list", status], ctx.prev)
-            showToast("Failed to remove book")
+            if (ctx?.prev) qc.setQueryData(LIST_KEY, ctx.prev)
+            showToast("Failed to remove book", "error")
         },
         onSuccess: async () => {
-            showToast("book removed")
             await qc.invalidateQueries({ queryKey: ["listIds"] })
             await qc.invalidateQueries({ queryKey: ["profile"] })
         },
@@ -240,22 +200,20 @@ function UserLibrary({ token }: { token: string }) {
 
     const rereadMutation = useMutation({
         mutationFn: (id: number) => apiReread(token, id),
-        onSuccess: async (updated) => {
-            qc.setQueryData<UserBook[]>(["list", status], (old) =>
-                old ? old.map((b) => (b.id === updated.id ? updated : b)) : [updated]
-            )
-            await qc.invalidateQueries({ queryKey: ["profile"] })
+        onSuccess: (updated) => {
+            setBook(updated)
+            qc.invalidateQueries({ queryKey: ["profile"] })
         },
+        onError: () => showToast("Failed to start reread", "error"),
     })
 
     const resetRereadMutation = useMutation({
         mutationFn: (id: number) => apiResetReread(token, id),
-        onSuccess: async (updated) => {
-            qc.setQueryData<UserBook[]>(["list", status], (old) =>
-                old ? old.map((b) => (b.id === updated.id ? updated : b)) : [updated]
-            )
-            await qc.invalidateQueries({ queryKey: ["profile"] })
+        onSuccess: (updated) => {
+            setBook(updated)
+            qc.invalidateQueries({ queryKey: ["profile"] })
         },
+        onError: () => showToast("Failed to reset rereads", "error"),
     })
 
     return (
@@ -266,6 +224,7 @@ function UserLibrary({ token }: { token: string }) {
                     <div className={s.filter_bar}>
                         {STATUSES.map((st) => {
                             const active = status === st.key
+                            const count = counts[st.key] ?? 0
                             return (
                                 <button
                                     key={st.key}
@@ -281,7 +240,7 @@ function UserLibrary({ token }: { token: string }) {
                                             : undefined
                                     }
                                 >
-                                    {st.label}
+                                    {st.label}{count > 0 ? ` ${count}` : ""}
                                 </button>
                             )
                         })}
@@ -305,7 +264,7 @@ function UserLibrary({ token }: { token: string }) {
                             title="Refresh library"
                         >
                             <span className={isFetching ? s.spin : ""}>↻</span>
-                            <span style={{ display: "inline" }}>refresh</span>
+                            <span>refresh</span>
                         </button>
                         <button className={s.add_btn} onClick={() => setShowModal(true)}>
                             + add custom
@@ -359,7 +318,7 @@ function UserLibrary({ token }: { token: string }) {
 
 interface EditableTableProps {
     books: UserBook[]
-    onPatch: (id: number, body: Partial<UserBook>, msg?: string) => void
+    onPatch: (id: number, body: BookPatch, msg?: string) => void
     onDelete: (id: number, title: string) => void
     onReread: (id: number, title: string) => void
     onResetReread: (id: number, title: string) => void
@@ -379,7 +338,7 @@ function EditableTable({ books, onPatch, onDelete, onReread, onResetReread }: Ed
                     <span>rating</span>
                     <span>pages</span>
                     <span>status</span>
-                    <span style={{ textAlign: "right" }}>actions</span>
+                    <span className={s.head_right}>actions</span>
                 </div>
 
                 {books.map((b) => (
@@ -407,7 +366,7 @@ function EditableTable({ books, onPatch, onDelete, onReread, onResetReread }: Ed
 
 interface LibraryRowProps {
     book: UserBook
-    onPatch: (id: number, body: Partial<UserBook>, msg?: string) => void
+    onPatch: (id: number, body: BookPatch, msg?: string) => void
     onDelete: (id: number, title: string) => void
     onReread: (id: number, title: string) => void
     onResetReread: (id: number, title: string) => void
@@ -438,14 +397,14 @@ function LibraryRow({
     const dirty = draftRead != null || draftTotal != null
 
     const save = () => {
-        const body: Partial<UserBook> = {}
+        const body: BookPatch = {}
         if (draftRead != null) {
             const n = parseInt(draftRead, 10)
             body.progress = isNaN(n) ? null : Math.max(0, n)
         }
         if (draftTotal != null) {
             const n = parseInt(draftTotal, 10)
-            body.total_pages = isNaN(n) ? null : Math.max(0, n)
+            body.total_pages = isNaN(n) || n < 1 ? null : n
         }
         onPatch(book.id, body)
         setDraftRead(null)
@@ -468,11 +427,11 @@ function LibraryRow({
 
             <StarRating
                 value={book.rating}
-                onChange={(v) => onPatch(book.id, { rating: book.rating === v ? null : v })}
+                onChange={(v) => onPatch(book.id, v === null ? { clear_rating: true } : { rating: v })}
                 size={14}
             />
 
-            <div style={{ display: "flex", alignItems: "center" }}>
+            <div className={s.pages_cell}>
                 <div className={s.pages_group}>
                     <input
                         className={`${s.page_input} clean-number`}

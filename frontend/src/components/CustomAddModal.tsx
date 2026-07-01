@@ -34,7 +34,7 @@ export default function AddCustomBook({ onClose, onAdded }: Props) {
             onAdded()
             onClose()
         },
-        onError: () => showToast("Failed to add book"),
+        onError: () => showToast("Failed to add book", "error"),
     })
 
     const handleKey = (e: React.KeyboardEvent) => {

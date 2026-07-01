@@ -1,23 +1,19 @@
-import { useState } from 'react'
 import s from './StarRating.module.css'
 
 interface StarRatingProps {
     value: number | null
-    onChange?: (v: number) => void
+    onChange?: (v: number | null) => void
     readonly?: boolean
     size?: number
 }
 
 export default function StarRating({ value, onChange, readonly = false, size = 16 }: StarRatingProps) {
-    const [internal, setInternal] = useState<number | null>(value)
-    const display = internal ?? 0
+    const display = value ?? 0
 
     const handleClick = (rating: number) => {
         if (readonly) return
         // toggle off if clicking the same value
-        const next = internal === rating ? null : rating
-        setInternal(next)
-        if (next !== null) onChange?.(next)
+        onChange?.(value === rating ? null : rating)
     }
 
     return (

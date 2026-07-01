@@ -6,6 +6,13 @@
     <link rel="preconnect" href="https://covers.openlibrary.org" />
     <link rel="dns-prefetch" href="https://covers.openlibrary.org" />
     <title>booker</title>
+    <script>
+      // set theme before first paint to avoid a flash
+      document.documentElement.setAttribute(
+        "data-theme",
+        localStorage.getItem("theme") === "light" ? "light" : "dark"
+      )
+    </script>
   </head>
   <body>
     <div id="root"></div>

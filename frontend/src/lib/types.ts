@@ -14,8 +14,12 @@ export interface UserBook {
   total_pages: number | null
   rereads: number
   work_id: string | null
+  note: string | null
+  started_at: string | null
+  finished_at: string | null
   created_at: string | null
   updated_at: string | null
+  community?: CommunityRating | null
 }
 
 export interface AuthUser {
@@ -29,8 +33,9 @@ export interface ListIds {
   authors: string[]
 }
 
+// rating is null until at least one booker user has rated the work
 export interface CommunityRating {
-  rating: number
+  rating: number | null
   count: number
 }
 
@@ -65,10 +70,17 @@ export interface ProfileStats {
   reading_time_days: number
 }
 
+export interface MonthlyStat {
+  month: string
+  books: number
+  pages: number
+}
+
 export interface ProfileData {
   username: string
   email: string
   stats: ProfileStats
+  monthly?: MonthlyStat[]
 }
 
 export const STATUSES: { key: BookStatus | "all"; label: string; color: string }[] = [

@@ -1,6 +1,6 @@
 import type { UserBook, OpenLibraryBook, BookDetail, ListIds, ProfileData } from "./types"
 
-const API_BASE = "http://127.0.0.1:8000"
+const API_BASE = import.meta.env.VITE_API_BASE ?? "/api"
 
 export class ApiError extends Error {
   status: number
@@ -71,7 +71,12 @@ export const apiProfile = (token: string) => api<ProfileData>("/profile", { toke
 export const apiAddBook = (token: string, body: Partial<UserBook>) =>
   api<UserBook>("/list", { method: "POST", body, token })
 
-export const apiPatchBook = (token: string, id: number, body: Partial<UserBook>) =>
+// rating: null in a patch means "not provided", clearing needs its own flag
+export type BookPatch = Partial<
+  Pick<UserBook, "status" | "rating" | "progress" | "total_pages" | "work_id" | "note">
+> & { clear_rating?: boolean }
+
+export const apiPatchBook = (token: string, id: number, body: BookPatch) =>
   api<UserBook>(`/list/${id}`, { method: "PATCH", body, token })
 
 export const apiDeleteBook = (token: string, id: number) =>

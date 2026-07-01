@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
-import { apiAddBook, ApiError } from '../lib/api'
+import { apiAddBook, apiBook, ApiError } from '../lib/api'
 import type { OpenLibraryBook } from '../lib/types'
 import StarRating from './StarRating'
 import styles from './BookCard.module.css'
@@ -55,7 +55,7 @@ function BookCard({ book, hideAddButton = false }: BookCardProps) {
                 qc.invalidateQueries({ queryKey: ["listIds"] })
                 return
             }
-            showToast(err instanceof Error ? err.message : "Failed to add book")
+            showToast(err instanceof Error ? err.message : "Failed to add book", "error")
         },
     })
 
@@ -71,8 +71,18 @@ function BookCard({ book, hideAddButton = false }: BookCardProps) {
 
     const open = () => navigate(`/book/${work_id}`)
 
+    // prefetch on hover so the book page opens instantly
+    const prefetch = () => {
+        if (!work_id) return
+        qc.prefetchQuery({
+            queryKey: ["book", work_id],
+            queryFn: () => apiBook(work_id),
+            staleTime: 60 * 60 * 1000,
+        })
+    }
+
     return (
-        <div className={styles.bookcard_container}>
+        <div className={styles.bookcard_container} onMouseEnter={prefetch}>
             <div className={styles.cover_container} onClick={open}>
                 <img
                     src={cover}
@@ -86,11 +96,17 @@ function BookCard({ book, hideAddButton = false }: BookCardProps) {
 
             <div className={styles.info_card}>
                 <div className={styles.top_part}>
-                    <StarRating value={community.rating} readonly size={13} />
-                    <span className={styles.rating_score}>{community.rating.toFixed(1)}</span>
-                    <span className={styles.rating_count}>
-                        ({community.count.toLocaleString()})
-                    </span>
+                    {community.rating != null ? (
+                        <>
+                            <StarRating value={community.rating} readonly size={13} />
+                            <span className={styles.rating_score}>{community.rating.toFixed(1)}</span>
+                            <span className={styles.rating_count}>
+                                ({community.count.toLocaleString()})
+                            </span>
+                        </>
+                    ) : (
+                        <span className={styles.rating_count}>no ratings yet</span>
+                    )}
                     {!hideAddButton && (
                         <button
                             className={`${styles.add_btn} ${added ? styles.added : ""}`}

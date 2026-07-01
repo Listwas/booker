@@ -11,7 +11,9 @@
     --bg-dark-text-95: hsl(0, 0%, 95%);
     --bg-dark-text-70: hsl(0, 0%, 70%);
     --bg-dark-text-count: hsla(0, 0%, 95%, 0.8);
-    --star-rating: hsl(47, 92%, 53%);
+    --accent: hsl(47, 92%, 53%);
+    --accent-ink: hsl(0, 0%, 10%);
+    --star-rating: var(--accent);
 
     color: var(--bg-dark-text-95);
     background-color: var(--bg-dark-0);
@@ -39,6 +41,15 @@ html, body, #root {
     margin: 0;
     min-height: 100%;
     font-family: "Inter", system-ui, sans-serif;
+}
+
+button, input, select, textarea {
+    font-family: inherit;
+}
+
+:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
 }
 
 #root {
@@ -89,6 +100,11 @@ input[type="number"].clean-number {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
     animation: toast_in 0.2s ease;
     max-width: 320px;
+    cursor: pointer;
+}
+
+.toast_error {
+    border-left-color: hsl(0, 72%, 55%);
 }
 
 @keyframes toast_in {

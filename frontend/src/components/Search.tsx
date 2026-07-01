@@ -8,6 +8,7 @@ function Search() {
     const [query, setQuery] = useState("")
     const [debounced, setDebounced] = useState("")
     const [open, setOpen] = useState(false)
+    const [active, setActive] = useState(-1)
     const navigate = useNavigate()
     const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -34,15 +35,28 @@ function Search() {
         navigate(`/search?q=${encodeURIComponent(query.trim())}`)
     }
 
-    const handleKey = (e: React.KeyboardEvent) => {
-        if (e.key === "Enter") go()
-        if (e.key === "Escape") setOpen(false)
-    }
-
-    const handleResultClick = (workId: string) => {
+    const openBook = (workId: string) => {
         setOpen(false)
         setQuery("")
+        setActive(-1)
         navigate(`/book/${workId}`)
+    }
+
+    const handleKey = (e: React.KeyboardEvent) => {
+        if (e.key === "ArrowDown" && results.length > 0) {
+            e.preventDefault()
+            setOpen(true)
+            setActive((a) => (a + 1) % results.length)
+        } else if (e.key === "ArrowUp" && results.length > 0) {
+            e.preventDefault()
+            setActive((a) => (a <= 0 ? results.length - 1 : a - 1))
+        } else if (e.key === "Enter") {
+            if (open && active >= 0 && results[active]) openBook(results[active].work_id)
+            else go()
+        } else if (e.key === "Escape") {
+            setOpen(false)
+            setActive(-1)
+        }
     }
 
     return (
@@ -56,6 +70,7 @@ function Search() {
                     onChange={(e) => {
                         setQuery(e.target.value)
                         setOpen(true)
+                        setActive(-1)
                     }}
                     onFocus={() => setOpen(true)}
                     onKeyDown={handleKey}
@@ -68,11 +83,16 @@ function Search() {
 
             {open && results.length > 0 && (
                 <div className={styles.dropdown}>
-                    {results.map((r) => (
+                    {results.map((r, i) => (
                         <div
                             key={r.work_id}
-                            className={styles.dropdown_item}
-                            onClick={() => handleResultClick(r.work_id)}
+                            className={`${styles.dropdown_item} ${i === active ? styles.dropdown_active : ""}`}
+                            // mousedown fires before the input blur
+                            onMouseDown={(e) => {
+                                e.preventDefault()
+                                openBook(r.work_id)
+                            }}
+                            onMouseEnter={() => setActive(i)}
                         >
                             <img className={styles.dropdown_cover} src={r.cover} alt="" />
                             <div className={styles.dropdown_info}>

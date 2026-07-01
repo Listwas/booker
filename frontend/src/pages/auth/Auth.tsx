@@ -124,7 +124,7 @@ export default function Auth() {
                         </div>
 
                         {isRegister && (
-                            <div className={s.field} style={{ marginTop: "12px" }}>
+                            <div className={s.field}>
                                 <label htmlFor="email">email</label>
                                 <input
                                     id="email"
@@ -142,7 +142,7 @@ export default function Auth() {
                             </div>
                         )}
 
-                        <div className={s.field} style={{ marginTop: "12px" }}>
+                        <div className={s.field}>
                             <label htmlFor="password">password</label>
                             <input
                                 id="password"
@@ -159,13 +159,12 @@ export default function Auth() {
                             ) : null}
                         </div>
 
-                        {serverError && <p className={s.error} style={{ marginTop: "10px" }}>{serverError}</p>}
+                        {serverError && <p className={`${s.error} ${s.server_error}`}>{serverError}</p>}
 
                         <button
                             type="submit"
                             className={s.submit}
                             disabled={isSubmitting}
-                            style={{ width: "100%" }}
                         >
                             {isSubmitting ? "..." : isRegister ? "create account" : "log in"}
                         </button>

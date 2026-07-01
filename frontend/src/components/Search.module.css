@@ -79,7 +79,8 @@
     transition: background 0.1s;
 }
 
-.dropdown_item:hover {
+.dropdown_item:hover,
+.dropdown_active {
     background: var(--bg-dark-10);
 }
 

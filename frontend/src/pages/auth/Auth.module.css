@@ -96,6 +96,7 @@
 }
 
 .submit {
+    width: 100%;
     padding: 9px;
     background: var(--bg-dark-button-30);
     border: none;
@@ -126,7 +127,7 @@
 .switch_text button {
     background: none;
     border: none;
-    color: hsl(47, 92%, 53%);
+    color: var(--accent);
     cursor: pointer;
     font-family: inherit;
     font-size: inherit;
@@ -135,4 +136,12 @@
 
 .switch_text button:hover {
     text-decoration: underline;
+}
+
+.field + .field {
+    margin-top: 12px;
+}
+
+.server_error {
+    margin-top: 10px;
 }

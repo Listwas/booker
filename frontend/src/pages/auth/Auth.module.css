@@ -13,14 +13,16 @@
     width: 100%;
     max-width: 400px;
     padding: 40px;
-    border: 3px solid var(--bg-dark-10);
+    background: var(--bg-dark-5);
+    border: 1px solid var(--bg-dark-10);
     border-radius: 8px;
 }
 
 .logo {
-    font-size: 2rem;
-    font-weight: 700;
-    color: var(--bg-dark-text-95);
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--accent);
+    letter-spacing: -0.01em;
     margin-bottom: 8px;
     text-decoration: none;
     text-align: center;
@@ -28,14 +30,17 @@
 
 .toggle {
     display: flex;
-    gap: 8px;
+    gap: 3px;
+    padding: 3px;
+    background: var(--bg-dark-10);
+    border-radius: 6px;
 }
 
 .toggle button {
     flex: 1;
-    padding: 7px;
+    padding: 6px;
     background: none;
-    border: 1px solid var(--bg-dark-80);
+    border: none;
     border-radius: 4px;
     color: var(--bg-dark-text-70);
     cursor: pointer;
@@ -50,7 +55,7 @@
 
 .toggle .active {
     color: var(--bg-dark-text-95);
-    border-color: var(--bg-dark-text-95);
+    background: var(--bg-dark-20);
 }
 
 .field {
@@ -68,7 +73,7 @@
     padding: 9px 10px;
     background: var(--bg-dark-10);
     border: 1px solid var(--bg-dark-button-30);
-    border-radius: 4px;
+    border-radius: 6px;
     color: var(--bg-dark-text-95);
     font-size: 0.95rem;
     font-family: inherit;
@@ -98,18 +103,20 @@
 .submit {
     width: 100%;
     padding: 9px;
-    background: var(--bg-dark-button-30);
+    background: var(--accent);
     border: none;
-    border-radius: 4px;
-    color: var(--bg-dark-text-95);
+    border-radius: 6px;
+    color: var(--accent-ink);
     font-size: 0.95rem;
+    font-weight: 600;
     cursor: pointer;
     margin-top: 4px;
     font-family: inherit;
+    transition: opacity 0.15s;
 }
 
 .submit:hover {
-    background: var(--bg-dark-80);
+    opacity: 0.85;
 }
 
 .submit:disabled {

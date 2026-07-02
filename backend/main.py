@@ -1,5 +1,9 @@
+import csv
+import io
+import time
 from fastapi import FastAPI, Depends, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import Response, JSONResponse
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, EmailStr, Field, field_validator
@@ -28,6 +32,7 @@ search_cache = TTLCache(maxsize=200, ttl=600)
 genre_cache = TTLCache(maxsize=200, ttl=1800)
 book_cache = TTLCache(maxsize=200, ttl=3600)
 meta_cache = TTLCache(maxsize=400, ttl=3600)
+rec_cache = TTLCache(maxsize=200, ttl=1800)
 _cache_lock = threading.Lock()
 
 
@@ -180,17 +185,83 @@ def register(body: RegisterBody, db: Session = Depends(get_db)):
     return {"message": "ok", "username": user.username, "email": user.email}
 
 
+# failed logins per username, enough to slow brute force down
+login_attempts: dict[str, list[float]] = {}
+_attempts_lock = threading.Lock()
+MAX_LOGIN_ATTEMPTS = 5
+LOGIN_WINDOW = 15 * 60
+
+
 @app.post("/login")
 def login(form: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+    key = form.username.lower()
+    now = time.time()
+    with _attempts_lock:
+        recent = [t for t in login_attempts.get(key, []) if now - t < LOGIN_WINDOW]
+        login_attempts[key] = recent
+        if len(recent) >= MAX_LOGIN_ATTEMPTS:
+            raise HTTPException(status_code=429, detail="Too many failed logins, try again later")
+
     user = db.query(User).filter(User.username == form.username).first()
     if not user or not verify_password(form.password, user.hashed_password):
+        with _attempts_lock:
+            login_attempts.setdefault(key, []).append(now)
         raise HTTPException(status_code=401, detail="Invalid credentials")
+
+    with _attempts_lock:
+        login_attempts.pop(key, None)
     return {"access_token": create_token(user.username), "token_type": "bearer"}
 
 
 @app.get("/me")
 def me(current_user: User = Depends(get_current_user)):
     return {"username": current_user.username, "email": current_user.email}
+
+
+class DeleteAccountBody(BaseModel):
+    password: str
+
+
+@app.post("/me/delete")
+def delete_account(body: DeleteAccountBody, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    if not verify_password(body.password, current_user.hashed_password):
+        raise HTTPException(status_code=403, detail="Wrong password")
+    db.query(UserBook).filter(UserBook.user_id == current_user.id).delete()
+    db.delete(current_user)
+    db.commit()
+    return {"message": "account deleted"}
+
+
+EXPORT_FIELDS = [
+    "title", "author", "status", "rating", "progress", "total_pages",
+    "rereads", "work_id", "note", "started_at", "finished_at", "created_at",
+]
+
+
+@app.get("/export")
+def export_library(format: str = "json", current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    books = (
+        db.query(UserBook)
+        .filter(UserBook.user_id == current_user.id)
+        .order_by(UserBook.created_at.desc())
+        .all()
+    )
+    rows = [{f: serialize_book(b)[f] for f in EXPORT_FIELDS} for b in books]
+
+    if format == "csv":
+        buf = io.StringIO()
+        writer = csv.DictWriter(buf, fieldnames=EXPORT_FIELDS)
+        writer.writeheader()
+        writer.writerows(rows)
+        return Response(
+            buf.getvalue(),
+            media_type="text/csv",
+            headers={"Content-Disposition": 'attachment; filename="booker-library.csv"'},
+        )
+    return JSONResponse(
+        rows,
+        headers={"Content-Disposition": 'attachment; filename="booker-library.json"'},
+    )
 
 
 @app.get("/profile")
@@ -374,32 +445,114 @@ def reset_reread(book_id: int, current_user: User = Depends(get_current_user), d
     return serialize_book(entry)
 
 
+SEARCH_FIELDS = "title,author_name,cover_i,key"
+
+
+def docs_to_books(docs, db):
+    docs = [d for d in docs if d.get("cover_i")]
+    work_ids = [d.get("key", "").replace("/works/", "") for d in docs]
+    ratings = community_ratings(db, work_ids)
+    return [
+        {
+            "title": d.get("title"),
+            "author": (d.get("author_name") or ["Unknown"])[0],
+            "cover": f"https://covers.openlibrary.org/b/id/{d['cover_i']}-M.jpg",
+            "work_id": work_id,
+            "community": ratings.get(work_id, {"rating": None, "count": 0}),
+        }
+        for d, work_id in zip(docs, work_ids)
+    ]
+
+
 @app.get("/books/{genre}")
 def get_books(genre: str, limit: int = 20, db: Session = Depends(get_db)):
+    # search api instead of /subjects so feeds stick to english titles
     cache_key = f"genre_{genre}_{limit}"
     try:
         data = _cached_get(
             cache_key, genre_cache,
-            f"https://openlibrary.org/subjects/{genre}.json",
-            params={"limit": limit},
+            "https://openlibrary.org/search.json",
+            params={"subject": genre, "language": "eng", "limit": limit, "fields": SEARCH_FIELDS},
         )
     except Exception:
         raise HTTPException(status_code=502, detail="couldn't reach openlibrary")
+    return {"books": docs_to_books(data.get("docs", []), db)}
 
-    works = [w for w in data.get("works", []) if w.get("cover_id")]
-    work_ids = [w.get("key", "").replace("/works/", "") for w in works]
-    ratings = community_ratings(db, work_ids)
 
-    books = []
-    for w, work_id in zip(works, work_ids):
-        books.append({
-            "title": w.get("title"),
-            "author": w.get("authors", [{}])[0].get("name") if w.get("authors") else "Unknown",
-            "cover": f"https://covers.openlibrary.org/b/id/{w['cover_id']}-M.jpg",
-            "work_id": work_id,
-            "community": ratings.get(work_id, {"rating": None, "count": 0}),
-        })
-    return {"books": books}
+# openlibrary subjects that say nothing about taste
+SUBJECT_STOPLIST = {
+    "fiction", "literature", "novels", "classic literature", "classics",
+    "english literature", "american literature", "long now manual for civilization",
+    "accessible book", "protected daisy", "in library", "open library staff picks",
+    "large type books", "translations into english", "new york times bestseller",
+    "fiction in english", "audiobooks", "juvenile fiction",
+}
+
+
+def top_subjects(subject_lists, k=3):
+    counts = {}
+    for subjects in subject_lists:
+        for s in subjects:
+            s = s.strip().lower()
+            if s in SUBJECT_STOPLIST or len(s) > 30:
+                continue
+            counts[s] = counts.get(s, 0) + 1
+    ranked = sorted(counts.items(), key=lambda kv: -kv[1])
+    return [s for s, _ in ranked[:k]]
+
+
+@app.get("/recommendations")
+def recommendations(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    books = (
+        db.query(UserBook)
+        .filter(UserBook.user_id == current_user.id, UserBook.work_id.isnot(None))
+        .order_by(UserBook.updated_at.desc())
+        .all()
+    )
+    if not books:
+        return {"books": [], "based_on": []}
+
+    owned = {b.work_id for b in books}
+    cache_key = (current_user.id, tuple(sorted(owned)))
+    with _cache_lock:
+        if cache_key in rec_cache:
+            return rec_cache[cache_key]
+
+    # subjects of the user's most recent books say what they're into
+    subject_lists = []
+    for b in books[:8]:
+        try:
+            data = _cached_get(
+                f"book_{b.work_id}", book_cache,
+                f"https://openlibrary.org/works/{b.work_id}.json",
+            )
+            subject_lists.append(data.get("subjects", []))
+        except Exception:
+            continue
+
+    picked, based_on, seen = [], [], set(owned)
+    for subject in top_subjects(subject_lists):
+        try:
+            data = _cached_get(
+                f"rec_{subject}", genre_cache,
+                "https://openlibrary.org/search.json",
+                params={"subject": subject, "language": "eng", "limit": 30, "fields": SEARCH_FIELDS},
+            )
+        except Exception:
+            continue
+        fresh = [bk for bk in docs_to_books(data.get("docs", []), db) if bk["work_id"] not in seen]
+        if fresh:
+            based_on.append(subject)
+            for bk in fresh:
+                seen.add(bk["work_id"])
+                picked.append(bk)
+        if len(picked) >= 20:
+            break
+
+    result = {"books": picked[:20], "based_on": based_on}
+    with _cache_lock:
+        rec_cache[cache_key] = result
+    return result
 
 
 @app.get("/search")
@@ -409,25 +562,11 @@ def search_books(q: str, limit: int = 20, db: Session = Depends(get_db)):
         data = _cached_get(
             cache_key, search_cache,
             "https://openlibrary.org/search.json",
-            params={"q": q, "limit": limit, "fields": "title,author_name,cover_i,key"},
+            params={"q": q, "limit": limit, "fields": SEARCH_FIELDS},
         )
     except Exception:
         raise HTTPException(status_code=502, detail="couldn't reach openlibrary")
-
-    docs = [d for d in data.get("docs", []) if d.get("cover_i")]
-    work_ids = [d.get("key", "").replace("/works/", "") for d in docs]
-    ratings = community_ratings(db, work_ids)
-
-    books = []
-    for doc, work_id in zip(docs, work_ids):
-        books.append({
-            "title": doc.get("title"),
-            "author": doc.get("author_name", ["Unknown"])[0],
-            "cover": f"https://covers.openlibrary.org/b/id/{doc['cover_i']}-M.jpg",
-            "work_id": work_id,
-            "community": ratings.get(work_id, {"rating": None, "count": 0}),
-        })
-    return {"books": books}
+    return {"books": docs_to_books(data.get("docs", []), db)}
 
 
 @app.get("/book/{work_id}")
@@ -523,3 +662,22 @@ def seed(current_user: User = Depends(get_current_user), db: Session = Depends(g
 @app.get("/demo")
 def demo():
     return {"profile": demo_profile(), "books": DEMO_BOOKS}
+
+
+# production entrypoint: `uvicorn main:server` serves the built frontend
+# and mounts the api under /api (same layout the vite proxy fakes in dev)
+from pathlib import Path
+from fastapi.responses import FileResponse
+
+DIST = Path(__file__).resolve().parent.parent / "frontend" / "dist"
+
+server = FastAPI(docs_url=None, redoc_url=None, openapi_url=None)
+server.mount("/api", app)
+
+if DIST.is_dir():
+    @server.get("/{path:path}")
+    def spa(path: str):
+        file = (DIST / path).resolve()
+        if path and file.is_file() and file.is_relative_to(DIST):
+            return FileResponse(file)
+        return FileResponse(DIST / "index.html")

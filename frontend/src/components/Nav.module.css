@@ -61,6 +61,25 @@
     flex-shrink: 0;
 }
 
+/* two rows on small screens: logo + links, then search + actions */
+@media (max-width: 640px) {
+    .nav_container {
+        flex-wrap: wrap;
+        height: auto;
+        padding: 10px 16px;
+        row-gap: 10px;
+    }
+
+    .middle_block {
+        flex: 0 0 auto;
+        justify-content: flex-start;
+    }
+
+    .right_block {
+        flex: 1 1 100%;
+    }
+}
+
 .theme_btn {
     width: 32px;
     height: 32px;

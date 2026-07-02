@@ -89,7 +89,7 @@ export default function Auth() {
         <>
             <div className={s.page}>
                 <div className={s.box}>
-                    <Link to="/" className={s.logo}>Booker</Link>
+                    <Link to="/" className={s.logo}>booker</Link>
 
                     <div className={s.toggle}>
                         <button

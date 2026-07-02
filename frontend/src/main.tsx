@@ -28,8 +28,8 @@ const queryClient = new QueryClient({
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <ToastProvider>
+      <ToastProvider>
+        <AuthProvider>
           <BrowserRouter>
             <Suspense fallback={null}>
               <Routes>
@@ -42,8 +42,8 @@ createRoot(document.getElementById('root')!).render(
               </Routes>
             </Suspense>
           </BrowserRouter>
-        </ToastProvider>
-      </AuthProvider>
+        </AuthProvider>
+      </ToastProvider>
     </QueryClientProvider>
   </StrictMode>
 )

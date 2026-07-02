@@ -8,8 +8,10 @@
 
 .banner {
     width: 100%;
-    height: 140px;
-    background: linear-gradient(120deg, hsla(47, 92%, 53%, 0.25), var(--bg-dark-10));
+    height: 120px;
+    background: var(--bg-dark-5);
+    border: 1px solid var(--bg-dark-10);
+    border-top: none;
     border-radius: 0 0 8px 8px;
 }
 
@@ -238,4 +240,79 @@
 .chart_label {
     font-size: 0.72rem;
     color: var(--bg-dark-text-70);
+}
+
+.account_section {
+    margin-top: 36px;
+}
+
+.account_row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.ghost_btn {
+    padding: 7px 14px;
+    background: none;
+    border: 1px solid var(--bg-dark-button-30);
+    border-radius: 6px;
+    color: var(--bg-dark-text-70);
+    font-size: 0.8rem;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.ghost_btn:hover {
+    border-color: var(--bg-dark-40);
+    color: var(--bg-dark-text-95);
+}
+
+.danger_ghost_btn {
+    composes: ghost_btn;
+    margin-left: auto;
+}
+
+.danger_ghost_btn:hover {
+    border-color: hsl(0, 70%, 55%);
+    color: hsl(0, 70%, 60%);
+}
+
+.danger_confirm {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
+    flex-wrap: wrap;
+}
+
+.danger_confirm input {
+    padding: 7px 10px;
+    background: var(--bg-dark-10);
+    border: 1px solid var(--bg-dark-button-30);
+    border-radius: 6px;
+    color: var(--bg-dark-text-95);
+    font-size: 0.8rem;
+    font-family: inherit;
+    outline: none;
+    width: 140px;
+}
+
+.danger_btn {
+    padding: 7px 14px;
+    background: hsl(0, 70%, 55%);
+    border: none;
+    border-radius: 6px;
+    color: hsl(0, 0%, 98%);
+    font-size: 0.8rem;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+}
+
+.danger_btn:disabled {
+    opacity: 0.6;
+    cursor: default;
 }

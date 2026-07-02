@@ -1,6 +1,6 @@
 import Nav from "../../components/Nav"
 import { Footer } from "../../components/Nav"
-import BookFeed from "./BookFeed"
+import BookFeed, { RecommendedFeed } from "./BookFeed"
 import s from "./Home.module.css"
 
 export default function Home() {
@@ -8,6 +8,7 @@ export default function Home() {
         <>
             <Nav />
             <div className={s.page_wrapper}>
+                <RecommendedFeed />
                 <BookFeed genre="fantasy" />
                 <BookFeed genre="science-fiction" header="Sci-Fi" />
                 <BookFeed genre="mystery" />

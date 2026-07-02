@@ -1,9 +1,11 @@
+import { useState } from "react"
 import { useQuery } from "@tanstack/react-query"
-import { Link } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
 import { useAuth } from "../../context/AuthContext"
+import { useToast } from "../../context/ToastContext"
 import Nav, { Footer } from "../../components/Nav"
 import BookCard from "../../components/BookCard"
-import { apiProfile, apiList } from "../../lib/api"
+import { apiProfile, apiList, apiExport, apiDeleteAccount, ApiError } from "../../lib/api"
 import type { MonthlyStat, ProfileData, UserBook } from "../../lib/types"
 import s from "./Profile.module.css"
 
@@ -191,8 +193,93 @@ export default function Profile() {
                         </div>
                     </section>
                 )}
+
+                <AccountSection token={token} />
             </div>
             <Footer />
         </>
+    )
+}
+
+function AccountSection({ token }: { token: string }) {
+    const { logout } = useAuth()
+    const { showToast } = useToast()
+    const navigate = useNavigate()
+    const [confirming, setConfirming] = useState(false)
+    const [password, setPassword] = useState("")
+    const [busy, setBusy] = useState(false)
+
+    const download = async (format: "csv" | "json") => {
+        try {
+            const blob = await apiExport(token, format)
+            const url = URL.createObjectURL(blob)
+            const a = document.createElement("a")
+            a.href = url
+            a.download = `booker-library.${format}`
+            a.click()
+            URL.revokeObjectURL(url)
+        } catch {
+            showToast("Export failed", "error")
+        }
+    }
+
+    const deleteAccount = async () => {
+        setBusy(true)
+        try {
+            await apiDeleteAccount(token, password)
+            logout()
+            showToast("account deleted")
+            navigate("/")
+        } catch (err) {
+            showToast(err instanceof ApiError ? err.message : "Failed to delete account", "error")
+        } finally {
+            setBusy(false)
+        }
+    }
+
+    return (
+        <section className={s.account_section}>
+            <p className={s.section_title}>account</p>
+            <div className={s.account_row}>
+                <button className={s.ghost_btn} onClick={() => download("csv")}>
+                    export library (csv)
+                </button>
+                <button className={s.ghost_btn} onClick={() => download("json")}>
+                    export library (json)
+                </button>
+
+                {confirming ? (
+                    <div className={s.danger_confirm}>
+                        <input
+                            type="password"
+                            placeholder="password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            autoFocus
+                        />
+                        <button
+                            className={s.danger_btn}
+                            disabled={!password || busy}
+                            onClick={deleteAccount}
+                        >
+                            {busy ? "deleting…" : "confirm delete"}
+                        </button>
+                        <button
+                            className={s.ghost_btn}
+                            onClick={() => {
+                                setConfirming(false)
+                                setPassword("")
+                            }}
+                        >
+                            cancel
+                        </button>
+                    </div>
+                ) : (
+                    <button className={s.danger_ghost_btn} onClick={() => setConfirming(true)}>
+                        delete account
+                    </button>
+                )}
+            </div>
+        </section>
     )
 }

@@ -41,6 +41,10 @@ export async function api<T>(
     } catch {
       // ignore parse errors
     }
+    // expired/invalid token mid-session, AuthProvider listens and logs out
+    if (res.status === 401 && path !== "/login") {
+      window.dispatchEvent(new Event("auth-expired"))
+    }
     throw new ApiError(res.status, message)
   }
   return res.json() as Promise<T>
@@ -99,6 +103,21 @@ export const apiBook = (workId: string) =>
 
 export const apiBookMeta = (workId: string) =>
   api<{ total_pages: number | null }>(`/book/${workId}/metadata`)
+
+export const apiRecommendations = (token: string) =>
+  api<{ books: OpenLibraryBook[]; based_on: string[] }>("/recommendations", { token })
+
+export const apiDeleteAccount = (token: string, password: string) =>
+  api<{ message: string }>("/me/delete", { method: "POST", body: { password }, token })
+
+// raw fetch, the response is a file download not json
+export const apiExport = async (token: string, format: "json" | "csv") => {
+  const res = await fetch(`${API_BASE}/export?format=${format}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  if (!res.ok) throw new ApiError(res.status, `Export failed (${res.status})`)
+  return res.blob()
+}
 
 export const apiSeed = (token: string) =>
   api<{ message: string }>("/seed", { method: "POST", token })

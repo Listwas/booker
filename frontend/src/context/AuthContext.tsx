@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, useCallback } from "react"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { apiMe, apiListIds, apiLogin, apiRegister } from "../lib/api"
+import { useToast } from "./ToastContext"
 import type { AuthUser, ListIds } from "../lib/types"
 
 interface AuthContextType {
@@ -18,6 +19,7 @@ const AuthContext = createContext<AuthContextType>(null!)
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
     const qc = useQueryClient()
+    const { showToast } = useToast()
     const [token, setToken] = useState<string | null>(localStorage.getItem("token"))
     const [user, setUser] = useState<AuthUser | null>(null)
     const [loading, setLoading] = useState(true)
@@ -48,6 +50,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const refreshListIds = useCallback(() => {
         qc.invalidateQueries({ queryKey: ["listIds"] })
     }, [qc])
+
+    // token expired mid-session, drop the stale login state
+    useEffect(() => {
+        const onExpired = () => {
+            if (!localStorage.getItem("token")) return
+            localStorage.removeItem("token")
+            setToken(null)
+            setUser(null)
+            qc.setQueryData(["listIds"], null)
+            showToast("session expired, please log in again", "error")
+        }
+        window.addEventListener("auth-expired", onExpired)
+        return () => window.removeEventListener("auth-expired", onExpired)
+    }, [qc, showToast])
 
     const login = useCallback(
         async (username: string, password: string) => {

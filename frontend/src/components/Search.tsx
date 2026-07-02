@@ -61,25 +61,20 @@ function Search() {
 
     return (
         <div className={styles.search_container}>
-            <div className={styles.input_row}>
-                <input
-                    className={styles.search}
-                    type="text"
-                    placeholder="search..."
-                    value={query}
-                    onChange={(e) => {
-                        setQuery(e.target.value)
-                        setOpen(true)
-                        setActive(-1)
-                    }}
-                    onFocus={() => setOpen(true)}
-                    onKeyDown={handleKey}
-                    onBlur={() => setTimeout(() => setOpen(false), 150)}
-                />
-                {query.length > 0 && (
-                    <button className={styles.arrow_btn} onClick={go}>→</button>
-                )}
-            </div>
+            <input
+                className={styles.search}
+                type="text"
+                placeholder="search books..."
+                value={query}
+                onChange={(e) => {
+                    setQuery(e.target.value)
+                    setOpen(true)
+                    setActive(-1)
+                }}
+                onFocus={() => setOpen(true)}
+                onKeyDown={handleKey}
+                onBlur={() => setTimeout(() => setOpen(false), 150)}
+            />
 
             {open && results.length > 0 && (
                 <div className={styles.dropdown}>
@@ -101,6 +96,15 @@ function Search() {
                             </div>
                         </div>
                     ))}
+                    <div
+                        className={styles.dropdown_all}
+                        onMouseDown={(e) => {
+                            e.preventDefault()
+                            go()
+                        }}
+                    >
+                        all results for "{query.trim()}" ↵
+                    </div>
                 </div>
             )}
         </div>

@@ -26,9 +26,8 @@ function Nav() {
     return (
         <div className={s.nav_outer}>
             <div className={s.nav_container}>
-                <Link to="/" className={s.logo}>booker</Link>
-
-                <div className={s.middle_block}>
+                <div className={s.left_block}>
+                    <Link to="/" className={s.logo}>booker</Link>
                     <Link to="/list" className={`${s.nav_link} ${isActive("/list")}`}>library</Link>
                     <Link to="/profile" className={`${s.nav_link} ${isActive("/profile")}`}>profile</Link>
                 </div>

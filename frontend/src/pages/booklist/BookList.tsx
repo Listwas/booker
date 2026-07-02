@@ -195,6 +195,7 @@ function UserLibrary({ token }: { token: string }) {
         onSuccess: async () => {
             await qc.invalidateQueries({ queryKey: ["listIds"] })
             await qc.invalidateQueries({ queryKey: ["profile"] })
+            await qc.invalidateQueries({ queryKey: ["recommendations"] })
         },
     })
 

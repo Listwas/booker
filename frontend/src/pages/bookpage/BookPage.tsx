@@ -52,6 +52,7 @@ export default function BookPage() {
             await qc.invalidateQueries({ queryKey: ["list"] })
             await qc.invalidateQueries({ queryKey: ["listIds"] })
             await qc.invalidateQueries({ queryKey: ["profile"] })
+            await qc.invalidateQueries({ queryKey: ["recommendations"] })
         },
         onError: (err) => {
             if (err instanceof ApiError && err.status === 400) {

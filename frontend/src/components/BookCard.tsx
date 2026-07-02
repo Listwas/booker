@@ -48,6 +48,7 @@ function BookCard({ book, hideAddButton = false }: BookCardProps) {
             await qc.invalidateQueries({ queryKey: ["list"] })
             await qc.invalidateQueries({ queryKey: ["listIds"] })
             await qc.invalidateQueries({ queryKey: ["profile"] })
+            await qc.invalidateQueries({ queryKey: ["recommendations"] })
         },
         onError: (err) => {
             if (err instanceof ApiError && err.status === 400 && err.message.includes("already")) {

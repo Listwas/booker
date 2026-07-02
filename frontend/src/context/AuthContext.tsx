@@ -51,6 +51,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         qc.invalidateQueries({ queryKey: ["listIds"] })
     }, [qc])
 
+    // everything keyed to the logged-in user, dropped on any account switch
+    const clearUserQueries = useCallback(() => {
+        for (const key of ["listIds", "list", "profile", "recommendations"]) {
+            qc.removeQueries({ queryKey: [key] })
+        }
+    }, [qc])
+
     // token expired mid-session, drop the stale login state
     useEffect(() => {
         const onExpired = () => {
@@ -58,17 +65,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             localStorage.removeItem("token")
             setToken(null)
             setUser(null)
-            qc.setQueryData(["listIds"], null)
+            clearUserQueries()
             showToast("session expired, please log in again", "error")
         }
         window.addEventListener("auth-expired", onExpired)
         return () => window.removeEventListener("auth-expired", onExpired)
-    }, [qc, showToast])
+    }, [clearUserQueries, showToast])
 
     const login = useCallback(
         async (username: string, password: string) => {
             try {
                 const data = await apiLogin(username, password)
+                clearUserQueries()
                 localStorage.setItem("token", data.access_token)
                 localStorage.setItem("hasAccount", "true")
                 setToken(data.access_token)
@@ -83,7 +91,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 return false
             }
         },
-        [qc]
+        [qc, clearUserQueries]
     )
 
     const register = useCallback(
@@ -102,8 +110,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         localStorage.removeItem("token")
         setToken(null)
         setUser(null)
-        qc.setQueryData(["listIds"], null)
-    }, [qc])
+        clearUserQueries()
+    }, [clearUserQueries])
 
     return (
         <AuthContext.Provider

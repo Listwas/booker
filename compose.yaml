@@ -1,0 +1,14 @@
+services:
+  booker:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      BOOKER_DATABASE_URL: sqlite:////data/booker.db
+      BOOKER_SECRET_KEY: ${BOOKER_SECRET_KEY:-change-me}
+    volumes:
+      - booker-data:/data
+    restart: unless-stopped
+
+volumes:
+  booker-data:

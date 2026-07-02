@@ -31,6 +31,7 @@ export default function AddCustomBook({ onClose, onAdded }: Props) {
             await qc.invalidateQueries({ queryKey: ["list"] })
             await qc.invalidateQueries({ queryKey: ["listIds"] })
             await qc.invalidateQueries({ queryKey: ["profile"] })
+            await qc.invalidateQueries({ queryKey: ["recommendations"] })
             onAdded()
             onClose()
         },

@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useEffect, useRef } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import styles from './BookFeed.module.css'
 import BookCard from '../../components/BookCard.tsx'
@@ -8,6 +8,7 @@ import { apiGenre, apiRecommendations } from '../../lib/api'
 import type { OpenLibraryBook } from '../../lib/types'
 
 const SCROLL_AMOUNT = 196 * 4
+const LOOP_MIN = 7
 
 interface FeedRowProps {
     header: string
@@ -16,8 +17,32 @@ interface FeedRowProps {
     isLoading: boolean
 }
 
+// rows loop seamlessly: the list is rendered three times, the view starts
+// on the middle copy and silently shifts by one copy width near the edges
 function FeedRow({ header, sub, books, isLoading }: FeedRowProps) {
     const ref = useRef<HTMLDivElement>(null)
+    const looped = books.length >= LOOP_MIN
+    const display = looped ? [...books, ...books, ...books] : books
+
+    const jumpBy = (el: HTMLDivElement, delta: number) => {
+        el.style.scrollBehavior = "auto"
+        el.scrollLeft += delta
+        el.style.scrollBehavior = ""
+    }
+
+    useEffect(() => {
+        const el = ref.current
+        if (!looped || !el) return
+        jumpBy(el, el.scrollWidth / 3 - el.scrollLeft)
+    }, [looped, books.length])
+
+    const handleScroll = () => {
+        const el = ref.current
+        if (!looped || !el) return
+        const copy = el.scrollWidth / 3
+        if (el.scrollLeft < copy * 0.5) jumpBy(el, copy)
+        else if (el.scrollLeft > copy * 1.5) jumpBy(el, -copy)
+    }
 
     const scroll = (dir: number) => {
         ref.current?.scrollBy({ left: SCROLL_AMOUNT * dir, behavior: "smooth" })
@@ -32,15 +57,15 @@ function FeedRow({ header, sub, books, isLoading }: FeedRowProps) {
             <div className={styles.carousel_wrapper}>
                 <button className={`${styles.arrow} ${styles.arrow_left}`} onClick={() => scroll(-1)}>‹</button>
 
-                <div className={styles.cards_row} ref={ref}>
+                <div className={styles.cards_row} ref={ref} onScroll={handleScroll}>
                     {isLoading
                         ? Array.from({ length: 6 }).map((_, i) => (
                             <div className={styles.card_wrap} key={i}>
                                 <BookCardSkeleton />
                             </div>
                         ))
-                        : books.map((b) => (
-                            <div className={styles.card_wrap} key={b.work_id}>
+                        : display.map((b, i) => (
+                            <div className={styles.card_wrap} key={`${b.work_id}-${i}`}>
                                 <BookCard book={b} />
                             </div>
                         ))}

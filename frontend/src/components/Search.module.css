@@ -36,6 +36,23 @@
     color: var(--bg-dark-text-70);
 }
 
+/* gentle pulse while a lookup is running */
+.search.fetching {
+    animation: search_pulse 1s ease-in-out infinite;
+}
+
+@keyframes search_pulse {
+    0%, 100% { background-color: var(--bg-dark-5); }
+    50% { background-color: var(--bg-dark-10); }
+}
+
+.dropdown_status {
+    padding: 12px;
+    font-size: 0.8rem;
+    color: var(--bg-dark-text-70);
+    text-align: center;
+}
+
 @media (max-width: 640px) {
     .search_container {
         flex: 1;

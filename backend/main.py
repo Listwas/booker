@@ -680,4 +680,5 @@ if DIST.is_dir():
         file = (DIST / path).resolve()
         if path and file.is_file() and file.is_relative_to(DIST):
             return FileResponse(file)
-        return FileResponse(DIST / "index.html")
+        # index.html must never be cached or stale spa shells stick around
+        return FileResponse(DIST / "index.html", headers={"Cache-Control": "no-cache"})

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, keepPreviousData } from '@tanstack/react-query'
 import { apiSearch } from '../lib/api'
 import styles from './Search.module.css'
 
@@ -14,17 +14,22 @@ function Search() {
 
     useEffect(() => {
         if (timer.current) clearTimeout(timer.current)
-        timer.current = setTimeout(() => setDebounced(query.trim()), 400)
+        timer.current = setTimeout(() => setDebounced(query.trim()), 250)
         return () => {
             if (timer.current) clearTimeout(timer.current)
         }
     }, [query])
 
-    const { data } = useQuery({
+    const searching = query.trim().length >= 2
+
+    // previous results stay visible while the next ones load, so the
+    // dropdown never blinks out mid-typing
+    const { data, isFetching } = useQuery({
         queryKey: ["search", debounced],
         queryFn: () => apiSearch(debounced, 5),
         enabled: debounced.length >= 2,
         staleTime: 5 * 60 * 1000,
+        placeholderData: keepPreviousData,
     })
 
     const results = data?.books ?? []
@@ -62,7 +67,7 @@ function Search() {
     return (
         <div className={styles.search_container}>
             <input
-                className={styles.search}
+                className={`${styles.search} ${isFetching ? styles.fetching : ""}`}
                 type="text"
                 placeholder="search books..."
                 value={query}
@@ -76,8 +81,13 @@ function Search() {
                 onBlur={() => setTimeout(() => setOpen(false), 150)}
             />
 
-            {open && results.length > 0 && (
+            {open && searching && (
                 <div className={styles.dropdown}>
+                    {results.length === 0 && (
+                        <div className={styles.dropdown_status}>
+                            {isFetching || debounced !== query.trim() ? "searching…" : "no results"}
+                        </div>
+                    )}
                     {results.map((r, i) => (
                         <div
                             key={r.work_id}

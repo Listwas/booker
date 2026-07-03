@@ -3,6 +3,7 @@ import { useQueryClient, useMutation } from '@tanstack/react-query'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
 import { apiAddBook } from '../lib/api'
+import { useLang } from '../lib/i18n'
 import s from './CustomAddModal.module.css'
 
 interface Props {
@@ -12,6 +13,7 @@ interface Props {
 
 export default function AddCustomBook({ onClose, onAdded }: Props) {
     const { token } = useAuth()
+    const { t } = useLang()
     const { showToast } = useToast()
     const qc = useQueryClient()
     const [title, setTitle] = useState("")
@@ -27,7 +29,7 @@ export default function AddCustomBook({ onClose, onAdded }: Props) {
                 status: "plan",
             }),
         onSuccess: async () => {
-            showToast(`"${title.trim()}" added to your library`)
+            showToast(t("toast_added", { title: title.trim() }))
             await qc.invalidateQueries({ queryKey: ["list"] })
             await qc.invalidateQueries({ queryKey: ["listIds"] })
             await qc.invalidateQueries({ queryKey: ["profile"] })
@@ -35,7 +37,7 @@ export default function AddCustomBook({ onClose, onAdded }: Props) {
             onAdded()
             onClose()
         },
-        onError: () => showToast("Failed to add book", "error"),
+        onError: () => showToast(t("toast_add_failed"), "error"),
     })
 
     const handleKey = (e: React.KeyboardEvent) => {
@@ -47,27 +49,27 @@ export default function AddCustomBook({ onClose, onAdded }: Props) {
         <div className={s.overlay} onClick={onClose}>
             <div className={s.modal} onClick={(e) => e.stopPropagation()}>
                 <div className={s.header}>
-                    <span className={s.modal_title}>add custom book</span>
+                    <span className={s.modal_title}>{t("modal_title")}</span>
                     <button className={s.close_btn} onClick={onClose}>✕</button>
                 </div>
 
                 <input
                     name="title"
-                    placeholder="title *"
+                    placeholder={t("modal_book_title")}
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     onKeyDown={handleKey}
                 />
                 <input
                     name="author"
-                    placeholder="author *"
+                    placeholder={t("modal_author")}
                     value={author}
                     onChange={(e) => setAuthor(e.target.value)}
                     onKeyDown={handleKey}
                 />
                 <input
                     name="cover"
-                    placeholder="cover url (optional)"
+                    placeholder={t("modal_cover")}
                     value={cover}
                     onChange={(e) => setCover(e.target.value)}
                     onKeyDown={handleKey}
@@ -78,7 +80,7 @@ export default function AddCustomBook({ onClose, onAdded }: Props) {
                     onClick={() => mutation.mutate()}
                     disabled={!title.trim() || !author.trim() || mutation.isPending}
                 >
-                    {mutation.isPending ? "adding…" : "add to library"}
+                    {mutation.isPending ? t("book_adding") : t("card_add")}
                 </button>
             </div>
         </div>

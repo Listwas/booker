@@ -5,6 +5,7 @@ import BookCard from '../../components/BookCard.tsx'
 import BookCardSkeleton from '../../components/BookCardSkeleton.tsx'
 import { useAuth } from '../../context/AuthContext'
 import { apiGenre, apiRecommendations } from '../../lib/api'
+import { useLang } from '../../lib/i18n'
 import type { OpenLibraryBook } from '../../lib/types'
 
 const SCROLL_AMOUNT = 196 * 4
@@ -15,11 +16,13 @@ interface FeedRowProps {
     sub?: string
     books: OpenLibraryBook[]
     isLoading: boolean
+    isError?: boolean
+    onRetry?: () => void
 }
 
 // rows loop seamlessly: the list is rendered three times, the view starts
 // on the middle copy and silently shifts by one copy width near the edges
-function FeedRow({ header, sub, books, isLoading }: FeedRowProps) {
+function FeedRow({ header, sub, books, isLoading, isError, onRetry }: FeedRowProps) {
     const ref = useRef<HTMLDivElement>(null)
     const looped = books.length >= LOOP_MIN
     const display = looped ? [...books, ...books, ...books] : books
@@ -46,6 +49,17 @@ function FeedRow({ header, sub, books, isLoading }: FeedRowProps) {
 
     const scroll = (dir: number) => {
         ref.current?.scrollBy({ left: SCROLL_AMOUNT * dir, behavior: "smooth" })
+    }
+
+    if (isError) {
+        return (
+            <div className={styles.feed_block}>
+                <h2>{header}</h2>
+                <div className={styles.feed_error}>
+                    <FeedError onRetry={onRetry} />
+                </div>
+            </div>
+        )
     }
 
     return (
@@ -77,8 +91,18 @@ function FeedRow({ header, sub, books, isLoading }: FeedRowProps) {
     )
 }
 
+function FeedError({ onRetry }: { onRetry?: () => void }) {
+    const { t } = useLang()
+    return (
+        <>
+            {t("feed_error")}
+            <button onClick={onRetry}>{t("feed_retry")}</button>
+        </>
+    )
+}
+
 function BookFeed({ header, genre }: { header?: string; genre: string }) {
-    const { data, isLoading } = useQuery({
+    const { data, isLoading, isError, refetch } = useQuery({
         queryKey: ["genre", genre],
         queryFn: () => apiGenre(genre),
         staleTime: 30 * 60 * 1000,
@@ -89,27 +113,31 @@ function BookFeed({ header, genre }: { header?: string; genre: string }) {
             header={header ?? genre.replace(/-/g, " ")}
             books={data?.books ?? []}
             isLoading={isLoading}
+            isError={isError}
+            onRetry={() => refetch()}
         />
     )
 }
 
 export function RecommendedFeed() {
     const { token } = useAuth()
+    const { t } = useLang()
 
-    const { data, isLoading } = useQuery({
+    const { data, isLoading, isError } = useQuery({
         queryKey: ["recommendations"],
         queryFn: () => apiRecommendations(token!),
         enabled: !!token,
         staleTime: 30 * 60 * 1000,
     })
 
-    if (!token) return null
+    // a bonus row, silently absent rather than erroring
+    if (!token || isError) return null
     if (!isLoading && (data?.books.length ?? 0) === 0) return null
 
     return (
         <FeedRow
-            header="picked for you"
-            sub={data?.based_on.length ? `because you read ${data.based_on.join(", ")}` : undefined}
+            header={t("feed_picked")}
+            sub={data?.based_on.length ? t("feed_because", { subjects: data.based_on.join(", ") }) : undefined}
             books={data?.books ?? []}
             isLoading={isLoading}
         />

@@ -4,14 +4,26 @@ personal book‑tracking / reading‑list app, styled after MyAnimeList. python/
 
 thesis project.
 
+![home](docs/home.png)
+
+<details>
+<summary>more screenshots</summary>
+
+![library](docs/library.png)
+![book page](docs/book.png)
+
+</details>
+
 ## what it does
 
 - browse genre feeds, live search, book pages with descriptions and covers
 - personal library: statuses (reading / plan / completed / dropped / hold), page progress, rereads, private notes, custom books
-- community ratings — the score on a card is the real average of what booker users rated that book
+- community ratings — the score on a card is the real average of what booker users rated that book, with open library's reader ratings as the fallback for books nobody here rated yet
+- account management: change password, delete account with your data
 - "picked for you" feed based on the subjects of books in your library
-- profile stats: pages read, reading time, status breakdown, books finished per month (start/finish dates are tracked automatically)
-- library export to csv/json, account deletion, login rate limiting
+- profile stats: pages read, reading time, status breakdown, books finished per month (start/finish dates are tracked automatically), custom avatar and banner
+- polish/english interface, on-demand description translation (mymemory)
+- library export to csv/json, password change, account deletion, login rate limiting
 - demo library for logged-out visitors, light/dark theme
 
 ## running it

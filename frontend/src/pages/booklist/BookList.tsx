@@ -16,21 +16,35 @@ import {
     ApiError,
     type BookPatch,
 } from "../../lib/api"
+import { useLang, type TKey } from "../../lib/i18n"
 import { SORTS, sortBooks, type SortKey } from "../../lib/sort"
 import { STATUSES, STATUS_COLORS, type BookStatus, type UserBook } from "../../lib/types"
 import s from "./BookList.module.css"
 
 const LIST_KEY = ["list", "all"] as const
 
+// custom books often have no cover url, show the initial instead
+function Cover({ cover, title, onClick }: { cover: string; title: string; onClick?: () => void }) {
+    if (!cover) {
+        return (
+            <div className={`${s.cover} ${s.cover_fallback}`} onClick={onClick}>
+                {title.slice(0, 1).toUpperCase()}
+            </div>
+        )
+    }
+    return <img className={s.cover} src={cover} alt={title} onClick={onClick} />
+}
+
 export default function BookList() {
     const { user, token, loading } = useAuth()
+    const { t } = useLang()
     const navigate = useNavigate()
 
     if (loading) {
         return (
             <>
                 <Nav />
-                <div className={s.loading}>loading your library…</div>
+                <div className={s.loading}>{t("list_loading")}</div>
                 <Footer />
             </>
         )
@@ -44,6 +58,7 @@ export default function BookList() {
 }
 
 function GuestLibrary({ onCta }: { onCta: () => void }) {
+    const { t } = useLang()
     const { data, isLoading } = useQuery({
         queryKey: ["demo"],
         queryFn: () => apiDemo(),
@@ -60,44 +75,41 @@ function GuestLibrary({ onCta }: { onCta: () => void }) {
                     <div className={s.guest_banner_text}>
                         <div className={s.guest_icon}>★</div>
                         <div>
-                            <p className={s.guest_title}>You're browsing a demo library</p>
-                            <p className={s.guest_sub}>
-                                This is what a booker library looks like. Create a free account to
-                                build your own, track reading, rate books, and keep a wishlist.
-                            </p>
+                            <p className={s.guest_title}>{t("guest_title")}</p>
+                            <p className={s.guest_sub}>{t("guest_sub")}</p>
                         </div>
                     </div>
-                    <button className={s.cta_btn} onClick={onCta}>create your library</button>
+                    <button className={s.cta_btn} onClick={onCta}>{t("guest_cta")}</button>
                 </div>
 
                 <div className={s.library_header}>
-                    <span className={s.library_owner}>demo_reader's library</span>
-                    <span className={s.readonly_badge}>read-only</span>
+                    <span className={s.library_owner}>{t("guest_owner")}</span>
+                    <span className={s.readonly_badge}>{t("guest_readonly")}</span>
                 </div>
 
                 {isLoading ? (
-                    <div className={s.loading}>loading demo…</div>
+                    <div className={s.loading}>{t("list_loading_demo")}</div>
                 ) : (
                     <div className={s.table_scroll}>
                         <div className={s.table}>
                             <div className={s.table_header}>
                                 <span />
-                                <span>book</span>
-                                <span>rating</span>
-                                <span>pages</span>
-                                <span>status</span>
+                                <span>{t("col_book")}</span>
+                                <span>{t("col_rating")}</span>
+                                <span>{t("col_pages")}</span>
+                                <span>{t("col_status")}</span>
                                 <span />
                             </div>
                             {books.map((b) => {
                                 const color = STATUS_COLORS[b.status as BookStatus] ?? "#888"
                                 return (
                                     <div className={s.table_row} key={b.id}>
-                                        <img className={s.cover} src={b.cover} alt={b.title} />
+                                        <Cover cover={b.cover} title={b.title} />
                                         <div>
                                             <span className={s.book_title}>{b.title}</span>
                                             <span className={s.book_author}>{b.author}</span>
                                             {b.rereads > 0 && (
-                                                <span className={s.reread_badge}>reread #{b.rereads}</span>
+                                                <span className={s.reread_badge}>{t("reread_badge", { n: b.rereads })}</span>
                                             )}
                                         </div>
                                         <StarRating value={b.rating} readonly size={14} />
@@ -108,7 +120,7 @@ function GuestLibrary({ onCta }: { onCta: () => void }) {
                                             className={s.status_pill}
                                             style={{ backgroundColor: `${color}20`, color }}
                                         >
-                                            {b.status}
+                                            {t(`status_${b.status}` as TKey)}
                                         </span>
                                         <span />
                                     </div>
@@ -125,6 +137,7 @@ function GuestLibrary({ onCta }: { onCta: () => void }) {
 
 function UserLibrary({ token }: { token: string }) {
     const qc = useQueryClient()
+    const { t, te } = useLang()
     const { showToast } = useToast()
     const [status, setStatus] = useState<BookStatus | "all">("all")
     const [sort, setSort] = useState<SortKey>("recent")
@@ -170,7 +183,7 @@ function UserLibrary({ token }: { token: string }) {
         },
         onError: (err, _vars, ctx) => {
             if (ctx?.prev) qc.setQueryData(LIST_KEY, ctx.prev)
-            showToast(err instanceof ApiError ? err.message : "Update failed", "error")
+            showToast(err instanceof ApiError ? te(err.message) : t("toast_update_failed"), "error")
         },
         onSuccess: (updated) => {
             setBook(updated)
@@ -190,7 +203,7 @@ function UserLibrary({ token }: { token: string }) {
         },
         onError: (_e, _id, ctx) => {
             if (ctx?.prev) qc.setQueryData(LIST_KEY, ctx.prev)
-            showToast("Failed to remove book", "error")
+            showToast(t("toast_remove_failed"), "error")
         },
         onSuccess: async () => {
             await qc.invalidateQueries({ queryKey: ["listIds"] })
@@ -205,7 +218,7 @@ function UserLibrary({ token }: { token: string }) {
             setBook(updated)
             qc.invalidateQueries({ queryKey: ["profile"] })
         },
-        onError: () => showToast("Failed to start reread", "error"),
+        onError: () => showToast(t("toast_reread_failed"), "error"),
     })
 
     const resetRereadMutation = useMutation({
@@ -214,7 +227,7 @@ function UserLibrary({ token }: { token: string }) {
             setBook(updated)
             qc.invalidateQueries({ queryKey: ["profile"] })
         },
-        onError: () => showToast("Failed to reset rereads", "error"),
+        onError: () => showToast(t("toast_reset_failed"), "error"),
     })
 
     return (
@@ -241,45 +254,45 @@ function UserLibrary({ token }: { token: string }) {
                                             : undefined
                                     }
                                 >
-                                    {st.label}{count > 0 ? ` ${count}` : ""}
+                                    {t(`status_${st.key}` as TKey)}{count > 0 ? ` ${count}` : ""}
                                 </button>
                             )
                         })}
                     </div>
 
                     <div className={s.sort_bar}>
-                        <span className={s.sort_label}>sort by</span>
+                        <span className={s.sort_label}>{t("sort_by")}</span>
                         <select
                             className={s.sort_select}
                             value={sort}
                             onChange={(e) => setSort(e.target.value as SortKey)}
                         >
                             {SORTS.map((o) => (
-                                <option key={o.key} value={o.key}>{o.label}</option>
+                                <option key={o.key} value={o.key}>{t(`sort_${o.key}` as TKey)}</option>
                             ))}
                         </select>
                         <button
                             className={s.refresh_btn}
                             onClick={() => refetch()}
                             disabled={isFetching}
-                            title="Refresh library"
+                            title={t("refresh")}
                         >
                             <span className={isFetching ? s.spin : ""}>↻</span>
-                            <span>refresh</span>
+                            <span>{t("refresh")}</span>
                         </button>
                         <button className={s.add_btn} onClick={() => setShowModal(true)}>
-                            + add custom
+                            {t("add_custom")}
                         </button>
                     </div>
                 </div>
 
                 {isLoading ? (
-                    <div className={s.loading}>loading your library…</div>
+                    <div className={s.loading}>{t("list_loading")}</div>
                 ) : books.length === 0 ? (
                     <div className={s.empty}>
                         {status === "all"
-                            ? "your library is empty, add some books from the home page"
-                            : `no books in "${status}" yet`}
+                            ? t("list_empty_all")
+                            : t("list_empty_status", { status: t(`status_${status}` as TKey) })}
                     </div>
                 ) : (
                     <EditableTable
@@ -290,15 +303,15 @@ function UserLibrary({ token }: { token: string }) {
                         }}
                         onDelete={(id, title) => {
                             deleteMutation.mutate(id)
-                            showToast(`"${title}" removed`)
+                            showToast(t("toast_removed", { title }))
                         }}
                         onReread={(id, title) => {
                             rereadMutation.mutate(id)
-                            showToast(`"${title}" reread started`)
+                            showToast(t("toast_reread", { title }))
                         }}
                         onResetReread={(id, title) => {
                             resetRereadMutation.mutate(id)
-                            showToast(`"${title}" reread count reset`)
+                            showToast(t("toast_reread_reset", { title }))
                         }}
                     />
                 )}
@@ -326,6 +339,7 @@ interface EditableTableProps {
 }
 
 function EditableTable({ books, onPatch, onDelete, onReread, onResetReread }: EditableTableProps) {
+    const { t } = useLang()
     const navigate = useNavigate()
     const [confirmReread, setConfirmReread] = useState<number | null>(null)
     const [confirmDelete, setConfirmDelete] = useState<number | null>(null)
@@ -335,11 +349,11 @@ function EditableTable({ books, onPatch, onDelete, onReread, onResetReread }: Ed
             <div className={s.table}>
                 <div className={s.table_header}>
                     <span />
-                    <span>book</span>
-                    <span>rating</span>
-                    <span>pages</span>
-                    <span>status</span>
-                    <span className={s.head_right}>actions</span>
+                    <span>{t("col_book")}</span>
+                    <span>{t("col_rating")}</span>
+                    <span>{t("col_pages")}</span>
+                    <span>{t("col_status")}</span>
+                    <span className={s.head_right}>{t("col_actions")}</span>
                 </div>
 
                 {books.map((b) => (
@@ -390,6 +404,7 @@ function LibraryRow({
     setConfirmDelete,
     onOpen,
 }: LibraryRowProps) {
+    const { t } = useLang()
     const [draftRead, setDraftRead] = useState<string | null>(null)
     const [draftTotal, setDraftTotal] = useState<string | null>(null)
 
@@ -412,17 +427,26 @@ function LibraryRow({
         setDraftTotal(null)
     }
 
+    // enter saves the drafts, escape throws them away
+    const handlePagesKey = (e: React.KeyboardEvent) => {
+        if (e.key === "Enter" && dirty) save()
+        if (e.key === "Escape") {
+            setDraftRead(null)
+            setDraftTotal(null)
+        }
+    }
+
     const color = STATUS_COLORS[book.status as BookStatus] ?? "#888"
 
     return (
         <div className={s.table_row}>
-            <img className={s.cover} src={book.cover} alt={book.title} onClick={onOpen} />
+            <Cover cover={book.cover} title={book.title} onClick={onOpen} />
 
             <div>
                 <button className={s.book_title} onClick={onOpen}>{book.title}</button>
                 <span className={s.book_author}>{book.author}</span>
                 {book.rereads > 0 && (
-                    <span className={s.reread_badge}>reread #{book.rereads}</span>
+                    <span className={s.reread_badge}>{t("reread_badge", { n: book.rereads })}</span>
                 )}
             </div>
 
@@ -441,7 +465,8 @@ function LibraryRow({
                         inputMode="numeric"
                         value={readValue}
                         onChange={(e) => setDraftRead(e.target.value)}
-                        placeholder="read"
+                        onKeyDown={handlePagesKey}
+                        placeholder={t("pages_read_ph")}
                         aria-label="Pages read"
                     />
                     <span className={s.page_sep}>/</span>
@@ -452,7 +477,8 @@ function LibraryRow({
                         inputMode="numeric"
                         value={totalValue}
                         onChange={(e) => setDraftTotal(e.target.value)}
-                        placeholder="total"
+                        onKeyDown={handlePagesKey}
+                        placeholder={t("pages_total_ph")}
                         aria-label="Total pages"
                     />
                 </div>
@@ -471,12 +497,12 @@ function LibraryRow({
                 }}
                 onChange={(e) => {
                     const newStatus = e.target.value as BookStatus
-                    const label = STATUSES.find((st) => st.key === newStatus)?.label ?? newStatus
-                    onPatch(book.id, { status: newStatus }, `status changed to ${label}`)
+                    const label = t(`status_${newStatus}` as TKey)
+                    onPatch(book.id, { status: newStatus }, t("toast_status_changed", { status: label }))
                 }}
             >
                 {STATUSES.filter((st) => st.key !== "all").map((st) => (
-                    <option key={st.key} value={st.key}>{st.label}</option>
+                    <option key={st.key} value={st.key}>{t(`status_${st.key}` as TKey)}</option>
                 ))}
             </select>
 
@@ -490,17 +516,17 @@ function LibraryRow({
                                 setConfirmReread(false)
                             }}
                         >
-                            yes
+                            {t("confirm_yes")}
                         </button>
                         <button className={s.confirm_no} onClick={() => setConfirmReread(false)}>
-                            no
+                            {t("confirm_no")}
                         </button>
                     </div>
                 ) : (
                     <button
                         className={s.reread_btn}
                         onClick={() => setConfirmReread(true)}
-                        title="start reread"
+                        title={t("title_reread")}
                     >
                         ⟳
                     </button>
@@ -509,7 +535,7 @@ function LibraryRow({
                     <button
                         className={s.reset_btn}
                         onClick={() => onResetReread(book.id, book.title)}
-                        title="reset reread count"
+                        title={t("title_reset_reread")}
                     >
                         ↺
                     </button>
@@ -523,17 +549,17 @@ function LibraryRow({
                                 setConfirmDelete(false)
                             }}
                         >
-                            yes
+                            {t("confirm_yes")}
                         </button>
                         <button className={s.confirm_no} onClick={() => setConfirmDelete(false)}>
-                            no
+                            {t("confirm_no")}
                         </button>
                     </div>
                 ) : (
                     <button
                         className={s.delete_btn}
                         onClick={() => setConfirmDelete(true)}
-                        title="remove"
+                        title={t("title_remove")}
                     >
                         ✕
                     </button>

@@ -4,15 +4,18 @@ import Nav, { Footer } from '../../components/Nav'
 import BookCard from '../../components/BookCard'
 import BookCardSkeleton from '../../components/BookCardSkeleton'
 import { apiSearch } from '../../lib/api'
+import { useLang } from '../../lib/i18n'
 import s from './SearchPage.module.css'
 
 export default function SearchPage() {
+    const { t } = useLang()
     const [params] = useSearchParams()
     const q = params.get("q") ?? ""
 
+    // two tidy rows of five
     const { data, isLoading } = useQuery({
-        queryKey: ["search", q],
-        queryFn: () => apiSearch(q),
+        queryKey: ["search", q, 10],
+        queryFn: () => apiSearch(q, 10),
         enabled: q.trim().length > 0,
         staleTime: 5 * 60 * 1000,
     })
@@ -24,7 +27,7 @@ export default function SearchPage() {
             <Nav />
             <div className={s.page}>
                 <p className={s.heading}>
-                    results for <span>"{q}"</span>
+                    {t("search_results_for")} <span>"{q}"</span>
                 </p>
                 {isLoading ? (
                     <div className={s.grid}>
@@ -33,7 +36,7 @@ export default function SearchPage() {
                         ))}
                     </div>
                 ) : books.length === 0 ? (
-                    <p className={s.empty}>nothing found</p>
+                    <p className={s.empty}>{t("search_nothing_found")}</p>
                 ) : (
                     <div className={s.grid}>
                         {books.map((b) => (

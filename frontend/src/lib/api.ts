@@ -1,4 +1,4 @@
-import type { UserBook, OpenLibraryBook, BookDetail, ListIds, ProfileData } from "./types"
+import type { AuthUser, UserBook, OpenLibraryBook, BookDetail, ListIds, ProfileData } from "./types"
 
 const API_BASE = import.meta.env.VITE_API_BASE ?? "/api"
 
@@ -63,7 +63,7 @@ export const apiRegister = (username: string, email: string, password: string) =
     body: { username, email, password },
   })
 
-export const apiMe = (token: string) => api<{ username: string; email: string }>("/me", { token })
+export const apiMe = (token: string) => api<AuthUser>("/me", { token })
 
 export const apiListIds = (token: string) => api<ListIds>("/list/ids", { token })
 
@@ -104,11 +104,27 @@ export const apiBook = (workId: string) =>
 export const apiBookMeta = (workId: string) =>
   api<{ total_pages: number | null }>(`/book/${workId}/metadata`)
 
+export const apiBookDescription = (workId: string, lang: string) =>
+  api<{ description: string }>(`/book/${workId}/description?lang=${lang}`)
+
 export const apiRecommendations = (token: string) =>
   api<{ books: OpenLibraryBook[]; based_on: string[] }>("/recommendations", { token })
 
 export const apiDeleteAccount = (token: string, password: string) =>
   api<{ message: string }>("/me/delete", { method: "POST", body: { password }, token })
+
+export const apiSetAvatar = (token: string, image: string | null) =>
+  api<{ avatar: string | null }>("/me/avatar", { method: "POST", body: { image }, token })
+
+export const apiSetBanner = (token: string, image: string | null) =>
+  api<{ banner: string | null }>("/me/banner", { method: "POST", body: { image }, token })
+
+export const apiChangePassword = (token: string, currentPassword: string, newPassword: string) =>
+  api<{ message: string }>("/me/password", {
+    method: "POST",
+    body: { current_password: currentPassword, new_password: newPassword },
+    token,
+  })
 
 // raw fetch, the response is a file download not json
 export const apiExport = async (token: string, format: "json" | "csv") => {
@@ -118,9 +134,6 @@ export const apiExport = async (token: string, format: "json" | "csv") => {
   if (!res.ok) throw new ApiError(res.status, `Export failed (${res.status})`)
   return res.blob()
 }
-
-export const apiSeed = (token: string) =>
-  api<{ message: string }>("/seed", { method: "POST", token })
 
 export const apiDemo = () =>
   api<{ profile: ProfileData; books: UserBook[] }>("/demo")

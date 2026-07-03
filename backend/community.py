@@ -24,12 +24,13 @@ def community_ratings(db: Session, work_ids: list[str]) -> dict[str, dict]:
         .group_by(UserBook.work_id)
         .all()
     )
-    return {work_id: {"rating": round(avg, 1), "count": count} for work_id, avg, count in rows}
+    return {
+        work_id: {"rating": round(avg, 1), "count": count, "source": "booker"}
+        for work_id, avg, count in rows
+    }
 
 
-def community_rating(db: Session, work_id: str | None) -> dict:
+def community_rating(db: Session, work_id: str | None) -> dict | None:
     if work_id:
-        found = community_ratings(db, [work_id]).get(work_id)
-        if found:
-            return found
-    return {"rating": None, "count": 0}
+        return community_ratings(db, [work_id]).get(work_id)
+    return None

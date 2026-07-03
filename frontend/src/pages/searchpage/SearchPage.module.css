@@ -19,9 +19,20 @@
 
 .grid {
     display: grid;
-    /* auto-fill so a few results don't stretch into giant cards */
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    grid-template-columns: repeat(5, 1fr);
     gap: 16px;
+}
+
+@media (max-width: 900px) {
+    .grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+@media (max-width: 560px) {
+    .grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
 }
 
 .grid > * {

@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useEffect, useCallback } from "rea
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { apiMe, apiListIds, apiLogin, apiRegister } from "../lib/api"
 import { useToast } from "./ToastContext"
+import { useLang } from "../lib/i18n"
 import type { AuthUser, ListIds } from "../lib/types"
 
 interface AuthContextType {
@@ -12,13 +13,14 @@ interface AuthContextType {
     login: (username: string, password: string) => Promise<boolean>
     register: (username: string, email: string, password: string) => Promise<boolean>
     logout: () => void
-    refreshListIds: () => void
+    refreshUser: () => void
 }
 
 const AuthContext = createContext<AuthContextType>(null!)
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
     const qc = useQueryClient()
+    const { t } = useLang()
     const { showToast } = useToast()
     const [token, setToken] = useState<string | null>(localStorage.getItem("token"))
     const [user, setUser] = useState<AuthUser | null>(null)
@@ -47,10 +49,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             .finally(() => setLoading(false))
     }, [token])
 
-    const refreshListIds = useCallback(() => {
-        qc.invalidateQueries({ queryKey: ["listIds"] })
-    }, [qc])
-
     // everything keyed to the logged-in user, dropped on any account switch
     const clearUserQueries = useCallback(() => {
         for (const key of ["listIds", "list", "profile", "recommendations"]) {
@@ -66,11 +64,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setToken(null)
             setUser(null)
             clearUserQueries()
-            showToast("session expired, please log in again", "error")
+            showToast(t("toast_session_expired"), "error")
         }
         window.addEventListener("auth-expired", onExpired)
         return () => window.removeEventListener("auth-expired", onExpired)
-    }, [clearUserQueries, showToast])
+    }, [clearUserQueries, showToast, t])
 
     const login = useCallback(
         async (username: string, password: string) => {
@@ -113,6 +111,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         clearUserQueries()
     }, [clearUserQueries])
 
+    // re-pull /me after profile changes (avatar, banner)
+    const refreshUser = useCallback(() => {
+        if (!token) return
+        apiMe(token).then(setUser).catch(() => {})
+    }, [token])
+
     return (
         <AuthContext.Provider
             value={{
@@ -123,7 +127,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 login,
                 register,
                 logout,
-                refreshListIds,
+                refreshUser,
             }}
         >
             {children}

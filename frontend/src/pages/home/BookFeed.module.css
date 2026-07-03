@@ -19,6 +19,32 @@
     color: var(--bg-dark-text-70);
 }
 
+.feed_error {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 28px 16px;
+    border: 1px dashed var(--bg-dark-20);
+    border-radius: 8px;
+    font-size: 0.85rem;
+    color: var(--bg-dark-text-70);
+}
+
+.feed_error button {
+    padding: 6px 14px;
+    background: none;
+    border: 1px solid var(--bg-dark-button-30);
+    border-radius: 6px;
+    color: var(--bg-dark-text-95);
+    font-size: 0.8rem;
+    font-family: inherit;
+    cursor: pointer;
+}
+
+.feed_error button:hover {
+    border-color: var(--bg-dark-40);
+}
+
 .carousel_wrapper {
     position: relative;
     width: 100%;

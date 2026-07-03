@@ -2,9 +2,11 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, keepPreviousData } from '@tanstack/react-query'
 import { apiSearch } from '../lib/api'
+import { useLang } from '../lib/i18n'
 import styles from './Search.module.css'
 
 function Search() {
+    const { t } = useLang()
     const [query, setQuery] = useState("")
     const [debounced, setDebounced] = useState("")
     const [open, setOpen] = useState(false)
@@ -33,6 +35,8 @@ function Search() {
     })
 
     const results = data?.books ?? []
+    // results still belong to the previous query while a new one runs
+    const stale = isFetching || debounced !== query.trim()
 
     const go = () => {
         if (!query.trim()) return
@@ -69,7 +73,7 @@ function Search() {
             <input
                 className={`${styles.search} ${isFetching ? styles.fetching : ""}`}
                 type="text"
-                placeholder="search books..."
+                placeholder={t("search_placeholder")}
                 value={query}
                 onChange={(e) => {
                     setQuery(e.target.value)
@@ -85,9 +89,13 @@ function Search() {
                 <div className={styles.dropdown}>
                     {results.length === 0 && (
                         <div className={styles.dropdown_status}>
-                            {isFetching || debounced !== query.trim() ? "searching…" : "no results"}
+                            {stale ? t("search_searching") : t("search_no_results")}
                         </div>
                     )}
+                    {results.length > 0 && stale && (
+                        <div className={styles.dropdown_status}>{t("search_searching")}</div>
+                    )}
+                    <div className={`${styles.dropdown_list} ${stale ? styles.dropdown_stale : ""}`}>
                     {results.map((r, i) => (
                         <div
                             key={r.work_id}
@@ -106,6 +114,7 @@ function Search() {
                             </div>
                         </div>
                     ))}
+                    </div>
                     <div
                         className={styles.dropdown_all}
                         onMouseDown={(e) => {
@@ -113,7 +122,7 @@ function Search() {
                             go()
                         }}
                     >
-                        all results for "{query.trim()}" ↵
+                        {t("search_all_results", { q: query.trim() })}
                     </div>
                 </div>
             )}

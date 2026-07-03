@@ -21,6 +21,9 @@ class User(Base):
     username = Column(String, unique=True, index=True)
     email = Column(String, unique=True, index=True)
     hashed_password = Column(String)
+    # small data-url images, resized client-side before upload
+    avatar = Column(Text, nullable=True)
+    banner = Column(Text, nullable=True)
 
     books = relationship("UserBook", back_populates="user", cascade="all, delete-orphan")
 
@@ -51,24 +54,32 @@ class UserBook(Base):
 def _migrate():
     # create_all won't alter existing tables, add new columns by hand
     added = {
-        "note": "TEXT",
-        "started_at": "DATETIME",
-        "finished_at": "DATETIME",
+        "user_books": {
+            "note": "TEXT",
+            "started_at": "DATETIME",
+            "finished_at": "DATETIME",
+        },
+        "users": {
+            "avatar": "TEXT",
+            "banner": "TEXT",
+        },
     }
     inspector = inspect(engine)
-    if "user_books" not in inspector.get_table_names():
-        return
-    existing = {c["name"] for c in inspector.get_columns("user_books")}
+    tables = inspector.get_table_names()
     with engine.begin() as conn:
-        for name, sql_type in added.items():
-            if name not in existing:
-                conn.execute(text(f"ALTER TABLE user_books ADD COLUMN {name} {sql_type}"))
-        # backfill finished_at for books completed before the column existed
-        if "finished_at" not in existing:
-            conn.execute(text(
-                "UPDATE user_books SET finished_at = updated_at "
-                "WHERE status = 'completed' AND finished_at IS NULL"
-            ))
+        for table, columns in added.items():
+            if table not in tables:
+                continue
+            existing = {c["name"] for c in inspector.get_columns(table)}
+            for name, sql_type in columns.items():
+                if name not in existing:
+                    conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {name} {sql_type}"))
+            # backfill finished_at for books completed before the column existed
+            if table == "user_books" and "finished_at" not in existing:
+                conn.execute(text(
+                    "UPDATE user_books SET finished_at = updated_at "
+                    "WHERE status = 'completed' AND finished_at IS NULL"
+                ))
 
 
 _migrate()

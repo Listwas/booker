@@ -4,6 +4,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
 import { apiAddBook, apiBook, ApiError } from '../lib/api'
+import { useLang } from '../lib/i18n'
 import type { OpenLibraryBook } from '../lib/types'
 import StarRating from './StarRating'
 import styles from './BookCard.module.css'
@@ -16,6 +17,7 @@ interface BookCardProps {
 function BookCard({ book, hideAddButton = false }: BookCardProps) {
     const { title, author, cover, work_id, community } = book
     const { token, listIds } = useAuth()
+    const { t, te } = useLang()
     const { showToast } = useToast()
     const navigate = useNavigate()
     const qc = useQueryClient()
@@ -44,7 +46,7 @@ function BookCard({ book, hideAddButton = false }: BookCardProps) {
                 work_id,
             }),
         onSuccess: async () => {
-            showToast(`"${title}" added to your library`)
+            showToast(t("toast_added", { title }))
             await qc.invalidateQueries({ queryKey: ["list"] })
             await qc.invalidateQueries({ queryKey: ["listIds"] })
             await qc.invalidateQueries({ queryKey: ["profile"] })
@@ -52,17 +54,17 @@ function BookCard({ book, hideAddButton = false }: BookCardProps) {
         },
         onError: (err) => {
             if (err instanceof ApiError && err.status === 400 && err.message.includes("already")) {
-                showToast(`"${title}" is already in your library`)
+                showToast(t("toast_already", { title }))
                 qc.invalidateQueries({ queryKey: ["listIds"] })
                 return
             }
-            showToast(err instanceof Error ? err.message : "Failed to add book", "error")
+            showToast(err instanceof ApiError ? te(err.message) : t("toast_add_failed"), "error")
         },
     })
 
     const handleAdd = () => {
         if (!token) {
-            showToast("Please login to add books to your library")
+            showToast(t("toast_login_to_add"))
             navigate("/auth", { state: { mode: "login" } })
             return
         }
@@ -106,14 +108,14 @@ function BookCard({ book, hideAddButton = false }: BookCardProps) {
                             </span>
                         </>
                     ) : (
-                        <span className={styles.rating_count}>no ratings yet</span>
+                        <span className={styles.rating_count}>{t("card_no_ratings")}</span>
                     )}
                     {!hideAddButton && (
                         <button
                             className={`${styles.add_btn} ${added ? styles.added : ""}`}
                             onClick={handleAdd}
                             disabled={added || addMutation.isPending}
-                            title={added ? "in your library" : "add to library"}
+                            title={added ? t("card_in_library") : t("card_add")}
                         >
                             {addMutation.isPending ? "…" : added ? "✓" : "+"}
                         </button>

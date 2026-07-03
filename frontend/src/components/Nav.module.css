@@ -141,6 +141,13 @@
     opacity: 0.8;
 }
 
+.avatar_circle img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+}
+
 .footer {
     margin-top: auto;
     border-top: 1px solid var(--bg-dark-10);

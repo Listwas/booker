@@ -25,6 +25,8 @@ export interface UserBook {
 export interface AuthUser {
   username: string
   email: string
+  avatar?: string | null
+  banner?: string | null
 }
 
 export interface ListIds {
@@ -33,10 +35,12 @@ export interface ListIds {
   authors: string[]
 }
 
-// rating is null until at least one booker user has rated the work
+// booker users' average when someone here rated the work, otherwise
+// open library's own reader rating; null when neither exists
 export interface CommunityRating {
   rating: number | null
   count: number
+  source?: "booker" | "openlibrary" | null
 }
 
 export interface OpenLibraryBook {
@@ -79,6 +83,8 @@ export interface MonthlyStat {
 export interface ProfileData {
   username: string
   email: string
+  avatar?: string | null
+  banner?: string | null
   stats: ProfileStats
   monthly?: MonthlyStat[]
 }

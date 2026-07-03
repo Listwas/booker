@@ -235,6 +235,11 @@
     background: var(--bg-dark-10);
 }
 
+.table_row:last-child {
+    border-bottom: none;
+    border-radius: 0 0 8px 8px;
+}
+
 .col_actions {
     display: flex;
     gap: 8px;
@@ -254,6 +259,17 @@
 .cover:hover {
     opacity: 0.85;
     transform: scale(1.02);
+}
+
+.cover_fallback {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--bg-dark-text-70);
+    background: var(--bg-dark-10);
+    border: 1px solid var(--bg-dark-20);
 }
 
 .book_title {

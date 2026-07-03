@@ -107,12 +107,47 @@
     margin-bottom: 16px;
 }
 
+.description_block {
+    margin-bottom: 28px;
+}
+
 .description {
     font-size: 0.9rem;
     color: var(--bg-dark-text-70);
     line-height: 1.7;
-    margin-bottom: 28px;
+    margin: 0 0 6px;
     white-space: pre-line;
+}
+
+.translate_row {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+}
+
+.translate_btn {
+    background: none;
+    border: none;
+    padding: 0;
+    color: var(--accent);
+    font-size: 0.78rem;
+    font-family: inherit;
+    cursor: pointer;
+}
+
+.translate_btn:hover {
+    text-decoration: underline;
+}
+
+.translate_btn:disabled {
+    opacity: 0.6;
+    cursor: default;
+}
+
+.translate_note {
+    font-size: 0.7rem;
+    color: var(--bg-dark-text-70);
+    opacity: 0.7;
 }
 
 .add_btn {
@@ -240,9 +275,11 @@
     font-family: inherit;
     font-size: 0.85rem;
     padding: 10px 12px;
-    resize: vertical;
+    resize: none;
     outline: none;
     line-height: 1.5;
+    max-height: 45vh;
+    overflow-y: auto;
 }
 
 .entry_note:focus {

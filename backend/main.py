@@ -33,6 +33,7 @@ genre_cache = TTLCache(maxsize=200, ttl=1800)
 book_cache = TTLCache(maxsize=200, ttl=3600)
 meta_cache = TTLCache(maxsize=400, ttl=3600)
 rec_cache = TTLCache(maxsize=200, ttl=1800)
+translation_cache = TTLCache(maxsize=300, ttl=24 * 3600)
 _cache_lock = threading.Lock()
 
 
@@ -215,7 +216,53 @@ def login(form: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get
 
 @app.get("/me")
 def me(current_user: User = Depends(get_current_user)):
-    return {"username": current_user.username, "email": current_user.email}
+    return {
+        "username": current_user.username,
+        "email": current_user.email,
+        "avatar": current_user.avatar,
+        "banner": current_user.banner,
+    }
+
+
+class ImageBody(BaseModel):
+    # data-url or null to reset; the client resizes before uploading,
+    # the limit is just a hard cap against oversized payloads
+    image: str | None = Field(default=None, max_length=800_000)
+
+    @field_validator("image")
+    @classmethod
+    def must_be_image(cls, v):
+        if v is not None and not v.startswith("data:image/"):
+            raise ValueError("not an image data url")
+        return v
+
+
+@app.post("/me/avatar")
+def set_avatar(body: ImageBody, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    current_user.avatar = body.image
+    db.commit()
+    return {"avatar": current_user.avatar}
+
+
+@app.post("/me/banner")
+def set_banner(body: ImageBody, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    current_user.banner = body.image
+    db.commit()
+    return {"banner": current_user.banner}
+
+
+class PasswordChangeBody(BaseModel):
+    current_password: str
+    new_password: str = Field(min_length=6)
+
+
+@app.post("/me/password")
+def change_password(body: PasswordChangeBody, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    if not verify_password(body.current_password, current_user.hashed_password):
+        raise HTTPException(status_code=403, detail="Wrong password")
+    current_user.hashed_password = hash_password(body.new_password)
+    db.commit()
+    return {"message": "password changed"}
 
 
 class DeleteAccountBody(BaseModel):
@@ -287,6 +334,8 @@ def get_profile(current_user: User = Depends(get_current_user), db: Session = De
     return {
         "username": current_user.username,
         "email": current_user.email,
+        "avatar": current_user.avatar,
+        "banner": current_user.banner,
         "stats": stats,
         "monthly": monthly_stats(books),
     }
@@ -445,7 +494,14 @@ def reset_reread(book_id: int, current_user: User = Depends(get_current_user), d
     return serialize_book(entry)
 
 
-SEARCH_FIELDS = "title,author_name,cover_i,key"
+SEARCH_FIELDS = "title,author_name,cover_i,key,ratings_average,ratings_count"
+
+
+def openlibrary_rating(avg, count):
+    # openlibrary's own reader ratings, used when no booker user rated a book
+    if avg and count:
+        return {"rating": round(avg, 1), "count": count, "source": "openlibrary"}
+    return {"rating": None, "count": 0, "source": None}
 
 
 def docs_to_books(docs, db):
@@ -458,7 +514,8 @@ def docs_to_books(docs, db):
             "author": (d.get("author_name") or ["Unknown"])[0],
             "cover": f"https://covers.openlibrary.org/b/id/{d['cover_i']}-M.jpg",
             "work_id": work_id,
-            "community": ratings.get(work_id, {"rating": None, "count": 0}),
+            "community": ratings.get(work_id)
+                or openlibrary_rating(d.get("ratings_average"), d.get("ratings_count")),
         }
         for d, work_id in zip(docs, work_ids)
     ]
@@ -599,6 +656,18 @@ def get_book(work_id: str, db: Session = Depends(get_db)):
     covers = data.get("covers", [])
     cover = f"https://covers.openlibrary.org/b/id/{covers[0]}-L.jpg" if covers else ""
 
+    community = community_rating(db, work_id)
+    if not community:
+        try:
+            ol = _cached_get(
+                f"ratings_{work_id}", book_cache,
+                f"https://openlibrary.org/works/{work_id}/ratings.json",
+            )
+            summary = ol.get("summary") or {}
+            community = openlibrary_rating(summary.get("average"), summary.get("count"))
+        except Exception:
+            community = openlibrary_rating(None, None)
+
     return {
         "title": data.get("title", ""),
         "authors": authors,
@@ -607,8 +676,57 @@ def get_book(work_id: str, db: Session = Depends(get_db)):
         "subjects": subjects,
         "first_publish_year": data.get("first_publish_date", ""),
         "work_id": work_id,
-        "community": community_rating(db, work_id),
+        "community": community,
     }
+
+
+def _split_chunks(text, limit=450):
+    # mymemory takes ~500 chars per request, split on sentence ends
+    chunks, current = [], ""
+    for part in text.replace("\r", "").split(". "):
+        piece = part if part.endswith(".") else part + ". "
+        if len(current) + len(piece) > limit and current:
+            chunks.append(current.strip())
+            current = piece
+        else:
+            current += piece
+    if current.strip():
+        chunks.append(current.strip())
+    return chunks
+
+
+@app.get("/book/{work_id}/description")
+def translate_description(work_id: str, lang: str = "pl"):
+    cache_key = (work_id, lang)
+    with _cache_lock:
+        if cache_key in translation_cache:
+            return translation_cache[cache_key]
+
+    data = _cached_get(f"book_{work_id}", book_cache, f"https://openlibrary.org/works/{work_id}.json")
+    description = data.get("description", "")
+    if isinstance(description, dict):
+        description = description.get("value", "")
+    if not description:
+        return {"description": ""}
+
+    translated = []
+    try:
+        for chunk in _split_chunks(description[:2500]):
+            r = requests.get(
+                "https://api.mymemory.translated.net/get",
+                params={"q": chunk, "langpair": f"en|{lang}"},
+                timeout=15,
+            ).json()
+            if r.get("responseStatus") != 200:
+                raise ValueError(r.get("responseDetails", "translation failed"))
+            translated.append(r["responseData"]["translatedText"])
+    except Exception:
+        raise HTTPException(status_code=502, detail="translation service unavailable")
+
+    result = {"description": " ".join(translated)}
+    with _cache_lock:
+        translation_cache[cache_key] = result
+    return result
 
 
 @app.get("/book/{work_id}/metadata")
@@ -646,17 +764,6 @@ def get_book_metadata(work_id: str):
     with _cache_lock:
         meta_cache[cache_key] = result
     return result
-
-
-@app.post("/seed")
-def seed(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    db.query(UserBook).filter(UserBook.user_id == current_user.id).delete()
-    for m in DEMO_BOOKS:
-        entry = UserBook(user_id=current_user.id, **m)
-        apply_status_dates(entry, entry.status)
-        db.add(entry)
-    db.commit()
-    return {"message": f"seeded {len(DEMO_BOOKS)} books"}
 
 
 @app.get("/demo")

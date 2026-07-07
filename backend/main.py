@@ -1,5 +1,6 @@
 import csv
 import io
+import re
 import time
 from fastapi import FastAPI, Depends, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
@@ -681,17 +682,29 @@ def get_book(work_id: str, db: Session = Depends(get_db)):
 
 
 def _split_chunks(text, limit=450):
-    # mymemory takes ~500 chars per request, split on sentence ends
+    # mymemory takes ~500 chars per request; split on sentence ends
+    # (also across newlines), hard-wrap anything still over the limit
+    sentences = re.split(r"(?<=[.!?])\s+", text.replace("\r", ""))
+    pieces = []
+    for s in sentences:
+        s = s.strip()
+        while len(s) > limit:
+            cut = s.rfind(" ", 0, limit)
+            cut = cut if cut > 0 else limit
+            pieces.append(s[:cut])
+            s = s[cut:].strip()
+        if s:
+            pieces.append(s)
+
     chunks, current = [], ""
-    for part in text.replace("\r", "").split(". "):
-        piece = part if part.endswith(".") else part + ". "
-        if len(current) + len(piece) > limit and current:
-            chunks.append(current.strip())
+    for piece in pieces:
+        if len(current) + len(piece) + 1 > limit and current:
+            chunks.append(current)
             current = piece
         else:
-            current += piece
-    if current.strip():
-        chunks.append(current.strip())
+            current = f"{current} {piece}".strip()
+    if current:
+        chunks.append(current)
     return chunks
 
 
@@ -717,9 +730,14 @@ def translate_description(work_id: str, lang: str = "pl"):
                 params={"q": chunk, "langpair": f"en|{lang}"},
                 timeout=15,
             ).json()
-            if r.get("responseStatus") != 200:
+            if str(r.get("responseStatus")) != "200":
                 raise ValueError(r.get("responseDetails", "translation failed"))
-            translated.append(r["responseData"]["translatedText"])
+            text = r["responseData"]["translatedText"]
+            # exhausted daily quota comes back as a 200 with a warning
+            # string instead of a translation
+            if "MYMEMORY WARNING" in text.upper():
+                raise ValueError("quota exhausted")
+            translated.append(text)
     except Exception:
         raise HTTPException(status_code=502, detail="translation service unavailable")
 

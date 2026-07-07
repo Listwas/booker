@@ -240,6 +240,52 @@
     border-radius: 0 0 8px 8px;
 }
 
+/* on phones each entry becomes a card instead of a scrolled table row */
+@media (max-width: 640px) {
+    .table {
+        min-width: 0;
+    }
+
+    .table_header {
+        display: none;
+    }
+
+    .table_row {
+        grid-template-columns: 64px 1fr auto;
+        grid-template-areas:
+            "cover info info"
+            "cover rating actions"
+            "cover pages status";
+        row-gap: 10px;
+        padding: 14px;
+        border-radius: 0;
+    }
+
+    .table_row:first-child {
+        border-radius: 8px 8px 0 0;
+    }
+
+    .table_row > :nth-child(1) {
+        grid-area: cover;
+        width: 56px;
+        height: 78px;
+    }
+
+    .table_row > :nth-child(2) { grid-area: info; min-width: 0; }
+    .table_row > :nth-child(3) { grid-area: rating; }
+    .table_row > :nth-child(4) { grid-area: pages; }
+    .table_row > :nth-child(5) { grid-area: status; justify-self: end; }
+    .table_row > :nth-child(6) { grid-area: actions; }
+
+    .reread_btn,
+    .reset_btn,
+    .delete_btn,
+    .save_btn {
+        width: 34px;
+        height: 34px;
+    }
+}
+
 .col_actions {
     display: flex;
     gap: 8px;

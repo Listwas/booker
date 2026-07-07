@@ -58,6 +58,13 @@ button, input, select, textarea {
     outline-offset: 2px;
 }
 
+/* ios zooms the page when focusing inputs with fonts under 16px */
+@media (max-width: 640px) {
+    input, select, textarea {
+        font-size: 16px;
+    }
+}
+
 #root {
     min-height: 100vh;
     display: flex;

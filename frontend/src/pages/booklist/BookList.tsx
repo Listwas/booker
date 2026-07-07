@@ -103,7 +103,8 @@ function GuestLibrary({ onCta }: { onCta: () => void }) {
                             {books.map((b) => {
                                 const color = STATUS_COLORS[b.status as BookStatus] ?? "#888"
                                 return (
-                                    <div className={s.table_row} key={b.id}>
+                                    // demo entries come without db ids
+                                    <div className={s.table_row} key={b.work_id ?? b.title}>
                                         <Cover cover={b.cover} title={b.title} />
                                         <div>
                                             <span className={s.book_title}>{b.title}</span>

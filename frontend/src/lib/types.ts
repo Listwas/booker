@@ -89,13 +89,14 @@ export interface ProfileData {
   monthly?: MonthlyStat[]
 }
 
-export const STATUSES: { key: BookStatus | "all"; label: string; color: string }[] = [
-  { key: "all", label: "all", color: "" },
-  { key: "reading", label: "reading", color: "#3b82f6" },
-  { key: "plan", label: "plan", color: "#6b7280" },
-  { key: "completed", label: "completed", color: "#22c55e" },
-  { key: "dropped", label: "dropped", color: "#ef4444" },
-  { key: "hold", label: "hold", color: "#f59e0b" },
+// labels come from the i18n dictionary (status_* keys)
+export const STATUSES: { key: BookStatus | "all"; color: string }[] = [
+  { key: "all", color: "" },
+  { key: "reading", color: "#3b82f6" },
+  { key: "plan", color: "#6b7280" },
+  { key: "completed", color: "#22c55e" },
+  { key: "dropped", color: "#ef4444" },
+  { key: "hold", color: "#f59e0b" },
 ]
 
 export const STATUS_COLORS: Record<BookStatus, string> = {

@@ -92,6 +92,14 @@
     font-size: 0.9rem;
 }
 
+/* comfortable touch target on phones/tablets */
+@media (pointer: coarse) {
+    .add_btn {
+        width: 34px;
+        height: 34px;
+    }
+}
+
 .bottom_part {
     display: flex;
     flex-direction: column;

@@ -50,21 +50,21 @@ env (optional): `BOOKER_SECRET_KEY` for jwt signing, `BOOKER_DATABASE_URL` to mo
 
 ## deployment
 
-one process serves everything, the built frontend plus the api under `/api`:
+easiest way, docker builds the frontend by itself:
+
+```sh
+docker compose up -d --build    # http://localhost:8000
+docker compose down
+```
+
+the db lands in a named volume, so it survives rebuilds. set `BOOKER_SECRET_KEY` in the environment (or an `.env` file) for anything public.
+
+without docker it's two steps, build the frontend and run the production server (it serves the built files plus the api under `/api`):
 
 ```sh
 cd frontend && npm run build
 cd ../backend && uvicorn main:server --host 0.0.0.0 --port 8000
 ```
-
-or with docker:
-
-```sh
-docker compose up -d    # http://localhost:8000
-docker compose down
-```
-
-the db lands in a named volume, so it survives rebuilds. set `BOOKER_SECRET_KEY` in the environment (or an `.env` file) for anything public.
 
 ## tests
 

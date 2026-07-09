@@ -18,11 +18,10 @@ thesis project.
 
 - browse genre feeds, live search, book pages with descriptions and covers
 - personal library: statuses (reading / plan / completed / dropped / hold), page progress, rereads, private notes, custom books
-- community ratings — the score on a card is the real average of what booker users rated that book, with open library's reader ratings as the fallback for books nobody here rated yet
-- account management: change password, delete account with your data
-- "picked for you" feed based on the subjects of books in your library
-- profile stats: pages read, reading time, status breakdown, books finished per month (start/finish dates are tracked automatically), custom avatar and banner
-- polish/english interface, on-demand description translation (mymemory)
+- community ratings. the score on a card is the real average of what booker users rated that book, and if nobody here rated it yet, it falls back to open library's reader ratings. no fake numbers
+- "picked for you" feed based on the subjects of books you already have
+- profile stats: pages read, reading time, status breakdown, books finished per month (start/finish dates get tracked automatically), custom avatar and banner
+- polish/english interface, plus on-demand description translation (mymemory)
 - library export to csv/json, password change, account deletion, login rate limiting
 - demo library for logged-out visitors, light/dark theme
 
@@ -51,7 +50,7 @@ env (optional): `BOOKER_SECRET_KEY` for jwt signing, `BOOKER_DATABASE_URL` to mo
 
 ## deployment
 
-one process serves everything — the built frontend plus the api under `/api`:
+one process serves everything, the built frontend plus the api under `/api`:
 
 ```sh
 cd frontend && npm run build

@@ -37,7 +37,7 @@ docker compose down
 
 `--build` is only needed the first time and after code changes. day to day a plain `docker compose up -d` just starts the image you already have.
 
-the db lands in a named volume, so it survives rebuilds. set `BOOKER_SECRET_KEY` in the environment (or an `.env` file) for anything public.
+the db lands in a named volume, so it survives rebuilds. for anything public set your own `BOOKER_SECRET_KEY`: copy `.env.example` to `.env` (or just drop the `.example` from the name), put a random value in it and docker compose picks it up on its own. running locally for yourself? skip it, there's a default.
 
 on windows: install [docker desktop](https://www.docker.com/products/docker-desktop/) first (it sets up wsl2 for you), then open a regular cmd, `cd` into the project folder and run the same `docker compose up -d --build`. when windows firewall asks for permission, click allow, and make sure your wi-fi is set to "private" if you want to open the app from your phone. no python or node needed for this route.
 

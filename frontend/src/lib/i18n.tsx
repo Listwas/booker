@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useCallback } from "react"
 
-// hand-rolled i18n: one flat dictionary per language, {var} interpolation
+// flat dictionaries + {var} interpolation
 
 const en = {
     // nav
@@ -99,7 +99,6 @@ const en = {
     title_reread: "start reread",
     title_reset_reread: "reset reread count",
     title_remove: "remove",
-    // language-proof, "0 of ?" reads the same everywhere
     pages_read_ph: "0",
     pages_total_ph: "?",
     toast_removed: '"{title}" removed',
@@ -412,7 +411,6 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
         [lang]
     )
 
-    // backend errors arrive in english, translate the known ones
     const te = useCallback(
         (msg: string) => (lang === "pl" ? backendPl[msg] ?? msg : msg),
         [lang]

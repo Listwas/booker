@@ -36,7 +36,6 @@
     color: var(--bg-dark-text-70);
 }
 
-/* gentle pulse while a lookup is running */
 .search.fetching {
     animation: search_pulse 1s ease-in-out infinite;
 }
@@ -60,7 +59,7 @@
     scrollbar-width: thin;
 }
 
-/* previous query's results while the next one loads */
+/* stale results while the next query runs */
 .dropdown_stale {
     opacity: 0.45;
     pointer-events: none;

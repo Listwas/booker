@@ -20,8 +20,7 @@ interface FeedRowProps {
     onRetry?: () => void
 }
 
-// rows loop seamlessly: the list is rendered three times, the view starts
-// on the middle copy and silently shifts by one copy width near the edges
+// looped row: list rendered 3x, scroll silently shifts by one copy width
 function FeedRow({ header, sub, books, isLoading, isError, onRetry }: FeedRowProps) {
     const ref = useRef<HTMLDivElement>(null)
     const looped = books.length >= LOOP_MIN
@@ -130,7 +129,7 @@ export function RecommendedFeed() {
         staleTime: 30 * 60 * 1000,
     })
 
-    // a bonus row, silently absent rather than erroring
+    // bonus row, hidden on error
     if (!token || isError) return null
     if (!isLoading && (data?.books.length ?? 0) === 0) return null
 

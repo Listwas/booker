@@ -56,7 +56,6 @@
     scroll-behavior: smooth;
     gap: 16px;
     padding-bottom: 8px;
-    /* arrows + wheel handle navigation, the bar itself is just noise */
     scrollbar-width: none;
 }
 
@@ -72,7 +71,7 @@
 
 .arrow {
     position: absolute;
-    /* covers are 180px wide at 2:3, so their middle sits at 135px */
+    /* middle of a 180px 2:3 cover */
     top: 135px;
     transform: translateY(-50%);
     width: 36px;

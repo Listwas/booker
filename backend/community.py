@@ -1,7 +1,4 @@
-"""Community ratings, aggregated from what users actually rated.
-
-Unrated books get rating=None so the UI can show "no ratings yet".
-"""
+"""Community ratings aggregated from what users actually rated."""
 
 from sqlalchemy import func
 from sqlalchemy.orm import Session

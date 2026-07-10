@@ -12,7 +12,7 @@ export default function SearchPage() {
     const [params] = useSearchParams()
     const q = params.get("q") ?? ""
 
-    // two tidy rows of five
+    // two rows of five
     const { data, isLoading } = useQuery({
         queryKey: ["search", q, 10],
         queryFn: () => apiSearch(q, 10),

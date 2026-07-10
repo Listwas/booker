@@ -49,14 +49,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             .finally(() => setLoading(false))
     }, [token])
 
-    // everything keyed to the logged-in user, dropped on any account switch
+    // user-scoped queries, cleared on account switch
     const clearUserQueries = useCallback(() => {
         for (const key of ["listIds", "list", "profile", "recommendations"]) {
             qc.removeQueries({ queryKey: [key] })
         }
     }, [qc])
 
-    // token expired mid-session, drop the stale login state
+    // token expired mid-session
     useEffect(() => {
         const onExpired = () => {
             if (!localStorage.getItem("token")) return
@@ -111,7 +111,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         clearUserQueries()
     }, [clearUserQueries])
 
-    // re-pull /me after profile changes (avatar, banner)
     const refreshUser = useCallback(() => {
         if (!token) return
         apiMe(token).then(setUser).catch(() => {})

@@ -41,7 +41,7 @@ export async function api<T>(
     } catch {
       // ignore parse errors
     }
-    // expired/invalid token mid-session, AuthProvider listens and logs out
+    // AuthProvider listens for this
     if (res.status === 401 && path !== "/login") {
       window.dispatchEvent(new Event("auth-expired"))
     }
@@ -75,7 +75,7 @@ export const apiProfile = (token: string) => api<ProfileData>("/profile", { toke
 export const apiAddBook = (token: string, body: Partial<UserBook>) =>
   api<UserBook>("/list", { method: "POST", body, token })
 
-// rating: null in a patch means "not provided", clearing needs its own flag
+// rating: null means "not provided", clearing needs its own flag
 export type BookPatch = Partial<
   Pick<UserBook, "status" | "rating" | "progress" | "total_pages" | "work_id" | "note">
 > & { clear_rating?: boolean }
@@ -126,7 +126,7 @@ export const apiChangePassword = (token: string, currentPassword: string, newPas
     token,
   })
 
-// raw fetch, the response is a file download not json
+// returns a blob, not json
 export const apiExport = async (token: string, format: "json" | "csv") => {
   const res = await fetch(`${API_BASE}/export?format=${format}`, {
     headers: { Authorization: `Bearer ${token}` },

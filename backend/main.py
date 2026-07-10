@@ -187,7 +187,7 @@ def register(body: RegisterBody, db: Session = Depends(get_db)):
     return {"message": "ok", "username": user.username, "email": user.email}
 
 
-# failed logins per username, enough to slow brute force down
+# failed logins per username
 login_attempts: dict[str, list[float]] = {}
 _attempts_lock = threading.Lock()
 MAX_LOGIN_ATTEMPTS = 5
@@ -226,8 +226,7 @@ def me(current_user: User = Depends(get_current_user)):
 
 
 class ImageBody(BaseModel):
-    # data-url or null to reset; the client resizes before uploading,
-    # the limit is just a hard cap against oversized payloads
+    # client resizes before upload, the cap is just a backstop
     image: str | None = Field(default=None, max_length=800_000)
 
     @field_validator("image")
@@ -499,7 +498,7 @@ SEARCH_FIELDS = "title,author_name,cover_i,key,ratings_average,ratings_count"
 
 
 def openlibrary_rating(avg, count):
-    # openlibrary's own reader ratings, used when no booker user rated a book
+    # fallback when no booker user rated a book
     if avg and count:
         return {"rating": round(avg, 1), "count": count, "source": "openlibrary"}
     return {"rating": None, "count": 0, "source": None}
@@ -576,7 +575,6 @@ def recommendations(current_user: User = Depends(get_current_user), db: Session 
         if cache_key in rec_cache:
             return rec_cache[cache_key]
 
-    # subjects of the user's most recent books say what they're into
     subject_lists = []
     for b in books[:8]:
         try:
@@ -682,8 +680,7 @@ def get_book(work_id: str, db: Session = Depends(get_db)):
 
 
 def _split_chunks(text, limit=450):
-    # mymemory takes ~500 chars per request; split on sentence ends
-    # (also across newlines), hard-wrap anything still over the limit
+    # mymemory caps a request at ~500 chars
     sentences = re.split(r"(?<=[.!?])\s+", text.replace("\r", ""))
     pieces = []
     for s in sentences:
@@ -733,8 +730,7 @@ def translate_description(work_id: str, lang: str = "pl"):
             if str(r.get("responseStatus")) != "200":
                 raise ValueError(r.get("responseDetails", "translation failed"))
             text = r["responseData"]["translatedText"]
-            # exhausted daily quota comes back as a 200 with a warning
-            # string instead of a translation
+            # exhausted quota comes back as a 200 with a warning string
             if "MYMEMORY WARNING" in text.upper():
                 raise ValueError("quota exhausted")
             translated.append(text)
@@ -789,8 +785,7 @@ def demo():
     return {"profile": demo_profile(), "books": DEMO_BOOKS}
 
 
-# production entrypoint: `uvicorn main:server` serves the built frontend
-# and mounts the api under /api (same layout the vite proxy fakes in dev)
+# production: `uvicorn main:server` serves the built frontend, api under /api
 from pathlib import Path
 from fastapi.responses import FileResponse
 
@@ -805,5 +800,5 @@ if DIST.is_dir():
         file = (DIST / path).resolve()
         if path and file.is_file() and file.is_relative_to(DIST):
             return FileResponse(file)
-        # index.html must never be cached or stale spa shells stick around
+        # don't let browsers cache the spa shell
         return FileResponse(DIST / "index.html", headers={"Cache-Control": "no-cache"})

@@ -58,7 +58,7 @@ button, input, select, textarea {
     outline-offset: 2px;
 }
 
-/* ios zooms the page when focusing inputs with fonts under 16px */
+/* ios zooms inputs with fonts under 16px */
 @media (max-width: 640px) {
     input, select, textarea {
         font-size: 16px;
@@ -92,7 +92,6 @@ input[type="number"].clean-number {
 .book-cover[data-loaded="true"] { animation: cover-in 0.35s ease; }
 @keyframes cover-in { from { opacity: 0; } to { opacity: 1; } }
 
-/* bottom-center so they can't be missed */
 .toast_container {
     position: fixed;
     bottom: 36px;

@@ -24,8 +24,6 @@ function Search() {
 
     const searching = query.trim().length >= 2
 
-    // previous results stay visible while the next ones load, so the
-    // dropdown never blinks out mid-typing
     const { data, isFetching } = useQuery({
         queryKey: ["search", debounced],
         queryFn: () => apiSearch(debounced, 5),
@@ -35,7 +33,7 @@ function Search() {
     })
 
     const results = data?.books ?? []
-    // results still belong to the previous query while a new one runs
+    // results may still belong to the previous query
     const stale = isFetching || debounced !== query.trim()
 
     const go = () => {

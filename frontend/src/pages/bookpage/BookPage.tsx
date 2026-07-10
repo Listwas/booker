@@ -197,8 +197,7 @@ export default function BookPage() {
     )
 }
 
-// openlibrary descriptions are english, non-english ui gets a translate
-// toggle backed by the backend's mymemory proxy
+// descriptions come in english, pl ui gets a translate toggle
 function BookDescription({ workId, original }: { workId: string; original: string }) {
     const { t, lang } = useLang()
     const { showToast } = useToast()
@@ -264,7 +263,7 @@ function UserEntryPanel({ entry, token }: { entry: UserBook; token: string }) {
     const noteValue = draftNote ?? entry.note ?? ""
     const noteDirty = draftNote != null && draftNote !== (entry.note ?? "")
 
-    // grow with the text, scroll only once the max height is hit
+    // grow with the text up to the css max-height
     useEffect(() => {
         const el = noteRef.current
         if (!el) return

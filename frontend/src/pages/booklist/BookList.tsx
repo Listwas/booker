@@ -23,7 +23,7 @@ import s from "./BookList.module.css"
 
 const LIST_KEY = ["list", "all"] as const
 
-// custom books often have no cover url, show the initial instead
+// custom books may have no cover
 function Cover({ cover, title, onClick }: { cover: string; title: string; onClick?: () => void }) {
     if (!cover) {
         return (
@@ -107,7 +107,7 @@ function GuestLibrary({ onCta }: { onCta: () => void }) {
                                     <div className={s.table_row} key={b.work_id ?? b.title}>
                                         <Cover cover={b.cover} title={b.title} />
                                         <div>
-                                            <span className={s.book_title}>{b.title}</span>
+                                            <span className={s.book_title} title={b.title}>{b.title}</span>
                                             <span className={s.book_author}>{b.author}</span>
                                             {b.rereads > 0 && (
                                                 <span className={s.reread_badge}>{t("reread_badge", { n: b.rereads })}</span>
@@ -428,7 +428,6 @@ function LibraryRow({
         setDraftTotal(null)
     }
 
-    // enter saves the drafts, escape throws them away
     const handlePagesKey = (e: React.KeyboardEvent) => {
         if (e.key === "Enter" && dirty) save()
         if (e.key === "Escape") {
@@ -444,7 +443,7 @@ function LibraryRow({
             <Cover cover={book.cover} title={book.title} onClick={onOpen} />
 
             <div>
-                <button className={s.book_title} onClick={onOpen}>{book.title}</button>
+                <button className={s.book_title} onClick={onOpen} title={book.title}>{book.title}</button>
                 <span className={s.book_author}>{book.author}</span>
                 {book.rereads > 0 && (
                     <span className={s.reread_badge}>{t("reread_badge", { n: book.rereads })}</span>

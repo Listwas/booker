@@ -21,7 +21,7 @@ class User(Base):
     username = Column(String, unique=True, index=True)
     email = Column(String, unique=True, index=True)
     hashed_password = Column(String)
-    # small data-url images, resized client-side before upload
+    # data-url images, resized client-side
     avatar = Column(Text, nullable=True)
     banner = Column(Text, nullable=True)
 

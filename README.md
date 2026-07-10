@@ -35,7 +35,11 @@ docker compose up -d --build    # http://localhost:8000
 docker compose down
 ```
 
+`--build` is only needed the first time and after code changes. day to day a plain `docker compose up -d` just starts the image you already have.
+
 the db lands in a named volume, so it survives rebuilds. set `BOOKER_SECRET_KEY` in the environment (or an `.env` file) for anything public.
+
+on windows: install [docker desktop](https://www.docker.com/products/docker-desktop/) first (it sets up wsl2 for you), then open a regular cmd, `cd` into the project folder and run the same `docker compose up -d --build`. when windows firewall asks for permission, click allow, and make sure your wi-fi is set to "private" if you want to open the app from your phone. no python or node needed for this route.
 
 without docker it's two steps, build the frontend and run the production server (it serves the built files plus the api under `/api`):
 

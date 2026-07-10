@@ -4,7 +4,7 @@ import react from '@vitejs/plugin-react-swc'
 export default defineConfig({
   plugins: [react()],
   server: {
-    // reachable from the local network (phone testing)
+    // reachable from the lan
     host: true,
     port: 5173,
     // /api goes to fastapi, prefix stripped so it can't collide with spa routes

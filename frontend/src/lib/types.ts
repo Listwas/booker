@@ -35,8 +35,7 @@ export interface ListIds {
   authors: string[]
 }
 
-// booker users' average when someone here rated the work, otherwise
-// open library's own reader rating; null when neither exists
+// booker average, or open library's when nobody here rated it
 export interface CommunityRating {
   rating: number | null
   count: number
@@ -89,7 +88,6 @@ export interface ProfileData {
   monthly?: MonthlyStat[]
 }
 
-// labels come from the i18n dictionary (status_* keys)
 export const STATUSES: { key: BookStatus | "all"; color: string }[] = [
   { key: "all", color: "" },
   { key: "reading", color: "#3b82f6" },

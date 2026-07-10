@@ -52,7 +52,7 @@ export default function Auth() {
     const navigate = useNavigate()
     const isRegister = mode === "register"
 
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- schemas depend on the language, t is stable per lang
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     const { registerSchema, loginSchema } = useMemo(() => buildSchemas(t), [lang])
 
     const {

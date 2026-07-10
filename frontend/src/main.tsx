@@ -8,7 +8,6 @@ import { LanguageProvider } from './lib/i18n'
 import Home from './pages/home/Home.tsx'
 import './index.css'
 
-// home is the landing page, the rest load on first visit
 const BookList = lazy(() => import('./pages/booklist/BookList.tsx'))
 const Auth = lazy(() => import('./pages/auth/Auth.tsx'))
 const Profile = lazy(() => import('./pages/profile/Profile.tsx'))

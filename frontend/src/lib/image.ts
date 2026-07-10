@@ -1,5 +1,4 @@
-// downscale an uploaded image in the browser so the backend only ever
-// stores a small jpeg data-url
+// downscale in the browser, backend stores a small jpeg data-url
 export function resizeImage(file: File, maxW: number, maxH: number): Promise<string> {
     return new Promise((resolve, reject) => {
         const img = new Image()

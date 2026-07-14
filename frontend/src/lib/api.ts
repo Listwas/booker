@@ -77,7 +77,7 @@ export const apiAddBook = (token: string, body: Partial<UserBook>) =>
 
 // rating: null means "not provided", clearing needs its own flag
 export type BookPatch = Partial<
-  Pick<UserBook, "status" | "rating" | "progress" | "total_pages" | "work_id" | "note">
+  Pick<UserBook, "status" | "rating" | "progress" | "total_pages" | "note">
 > & { clear_rating?: boolean }
 
 export const apiPatchBook = (token: string, id: number, body: BookPatch) =>

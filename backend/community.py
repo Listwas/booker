@@ -3,7 +3,7 @@
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from database import UserBook
+from database import Book, UserBook
 
 
 def community_ratings(db: Session, work_ids: list[str]) -> dict[str, dict]:
@@ -13,12 +13,13 @@ def community_ratings(db: Session, work_ids: list[str]) -> dict[str, dict]:
         return {}
     rows = (
         db.query(
-            UserBook.work_id,
+            Book.work_id,
             func.avg(UserBook.rating),
             func.count(UserBook.rating),
         )
-        .filter(UserBook.work_id.in_(ids), UserBook.rating.isnot(None))
-        .group_by(UserBook.work_id)
+        .join(UserBook, UserBook.book_id == Book.id)
+        .filter(Book.work_id.in_(ids), UserBook.rating.isnot(None))
+        .group_by(Book.work_id)
         .all()
     )
     return {

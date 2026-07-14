@@ -13,7 +13,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 import main
-from database import Base, engine
+from database import Base, engine, seed_statuses
 
 
 @pytest.fixture(autouse=True)
@@ -26,6 +26,7 @@ def no_openlibrary(monkeypatch):
 def client():
     Base.metadata.drop_all(bind=engine)
     Base.metadata.create_all(bind=engine)
+    seed_statuses()
     main.login_attempts.clear()
     main.rec_cache.clear()
     main.translation_cache.clear()

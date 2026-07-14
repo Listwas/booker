@@ -6,13 +6,13 @@ from fastapi import FastAPI, Depends, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response, JSONResponse
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from pydantic import BaseModel, EmailStr, Field, field_validator
 import requests
 from cachetools import TTLCache
 import threading
 
-from database import SessionLocal, User, UserBook, utcnow
+from database import SessionLocal, User, UserBook, Book, Author, Status, STATUS_NAMES, utcnow
 from auth import hash_password, verify_password, create_token, decode_token
 from community import community_rating, community_ratings
 from demo_data import DEMO_BOOKS, demo_profile
@@ -79,15 +79,28 @@ class BookEntry(BaseModel):
     total_pages: int | None = Field(default=None, ge=1)
     work_id: str | None = None
 
+    @field_validator("status")
+    @classmethod
+    def status_known(cls, v):
+        if v not in STATUS_NAMES:
+            raise ValueError("Unknown status")
+        return v
+
 
 class BookUpdate(BaseModel):
     status: str | None = None
     rating: float | None = Field(default=None, ge=0, le=5)
     progress: int | None = Field(default=None, ge=0)
     total_pages: int | None = Field(default=None, ge=1)
-    work_id: str | None = None
     note: str | None = Field(default=None, max_length=2000)
     clear_rating: bool = False
+
+    @field_validator("status")
+    @classmethod
+    def status_known(cls, v):
+        if v is not None and v not in STATUS_NAMES:
+            raise ValueError("Unknown status")
+        return v
 
 
 def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
@@ -100,19 +113,46 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     return user
 
 
+def status_by_name(db, name):
+    return db.query(Status).filter(Status.name == name).first()
+
+
+def get_or_create_book(db, title, author_name, cover, work_id):
+    author = db.query(Author).filter(Author.name == author_name).first()
+    if not author:
+        author = Author(name=author_name)
+        db.add(author)
+        db.flush()
+    if work_id:
+        book = db.query(Book).filter(Book.work_id == work_id).first()
+    else:
+        book = db.query(Book).filter(Book.title == title, Book.author_id == author.id).first()
+    if not book:
+        book = Book(title=title, cover=cover or "", work_id=work_id, author_id=author.id)
+        db.add(book)
+        db.flush()
+    return book
+
+
+ENTRY_LOAD = (
+    joinedload(UserBook.book).joinedload(Book.author),
+    joinedload(UserBook.status),
+)
+
+
 def serialize_book(b, community=None):
     return {
         "id": b.id,
         "user_id": b.user_id,
-        "title": b.title,
-        "author": b.author,
-        "cover": b.cover,
-        "status": b.status,
+        "title": b.book.title,
+        "author": b.book.author.name if b.book.author else "Unknown",
+        "cover": b.book.cover,
+        "status": b.status.name,
         "rating": b.rating,
         "progress": b.progress,
         "total_pages": b.total_pages,
         "rereads": b.rereads,
-        "work_id": b.work_id,
+        "work_id": b.book.work_id,
         "note": b.note,
         "started_at": b.started_at.isoformat() if b.started_at else None,
         "finished_at": b.finished_at.isoformat() if b.finished_at else None,
@@ -127,7 +167,7 @@ def calc_pages_read(books):
     total = 0
     for b in books:
         base = 0
-        if b.status == "completed" and b.total_pages:
+        if b.status.name == "completed" and b.total_pages:
             base = b.total_pages
         elif b.progress:
             base = b.progress
@@ -148,7 +188,7 @@ def monthly_stats(books, months=6):
 
     buckets = {k: {"books": 0, "pages": 0} for k in keys}
     for b in books:
-        if b.status == "completed" and b.finished_at:
+        if b.status.name == "completed" and b.finished_at:
             k = (b.finished_at.year, b.finished_at.month)
             if k in buckets:
                 buckets[k]["books"] += 1
@@ -165,7 +205,7 @@ def apply_status_dates(entry, new_status):
             entry.started_at = utcnow()
         if entry.finished_at is None:
             entry.finished_at = utcnow()
-    elif entry.status == "completed":
+    elif entry.status is not None and entry.status.name == "completed":
         # left completed, finish date no longer applies
         entry.finished_at = None
 
@@ -313,20 +353,29 @@ def export_library(format: str = "json", current_user: User = Depends(get_curren
 
 @app.get("/profile")
 def get_profile(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    books = db.query(UserBook).filter(UserBook.user_id == current_user.id).all()
+    books = (
+        db.query(UserBook)
+        .options(joinedload(UserBook.status))
+        .filter(UserBook.user_id == current_user.id)
+        .all()
+    )
 
     total_pages_read = calc_pages_read(books)
     total_minutes = total_pages_read
     reading_time_hours = total_minutes // 60
     reading_time_days = reading_time_hours // 24
 
+    by_status = {}
+    for b in books:
+        by_status[b.status.name] = by_status.get(b.status.name, 0) + 1
+
     stats = {
         "total": len(books),
-        "reading": sum(1 for b in books if b.status == "reading"),
-        "completed": sum(1 for b in books if b.status == "completed"),
-        "plan": sum(1 for b in books if b.status == "plan"),
-        "dropped": sum(1 for b in books if b.status == "dropped"),
-        "hold": sum(1 for b in books if b.status == "hold"),
+        "reading": by_status.get("reading", 0),
+        "completed": by_status.get("completed", 0),
+        "plan": by_status.get("plan", 0),
+        "dropped": by_status.get("dropped", 0),
+        "hold": by_status.get("hold", 0),
         "total_pages_read": total_pages_read,
         "reading_time_hours": reading_time_hours,
         "reading_time_days": reading_time_days,
@@ -343,21 +392,21 @@ def get_profile(current_user: User = Depends(get_current_user), db: Session = De
 
 @app.get("/list")
 def get_list(status: str = "all", current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    q = db.query(UserBook).filter(UserBook.user_id == current_user.id)
+    q = db.query(UserBook).options(*ENTRY_LOAD).filter(UserBook.user_id == current_user.id)
     if status != "all":
-        q = q.filter(UserBook.status == status)
+        q = q.join(Status).filter(Status.name == status)
     books = q.order_by(UserBook.created_at.desc()).all()
-    ratings = community_ratings(db, [b.work_id for b in books])
-    return [serialize_book(b, ratings.get(b.work_id)) for b in books]
+    ratings = community_ratings(db, [b.book.work_id for b in books])
+    return [serialize_book(b, ratings.get(b.book.work_id)) for b in books]
 
 
 @app.get("/list/ids")
 def get_list_ids(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    books = db.query(UserBook).filter(UserBook.user_id == current_user.id).all()
+    books = db.query(UserBook).options(*ENTRY_LOAD).filter(UserBook.user_id == current_user.id).all()
     return {
-        "work_ids": [b.work_id for b in books],
-        "titles": [b.title for b in books],
-        "authors": [b.author for b in books],
+        "work_ids": [b.book.work_id for b in books],
+        "titles": [b.book.title for b in books],
+        "authors": [b.book.author.name if b.book.author else "Unknown" for b in books],
     }
 
 
@@ -387,29 +436,27 @@ def add_book(
 ):
     existing = None
     if body.work_id:
-        existing = db.query(UserBook).filter(
+        existing = db.query(UserBook).join(Book).filter(
             UserBook.user_id == current_user.id,
-            UserBook.work_id == body.work_id,
+            Book.work_id == body.work_id,
         ).first()
     if not existing and not body.work_id:
-        existing = db.query(UserBook).filter(
+        existing = db.query(UserBook).join(Book).join(Author).filter(
             UserBook.user_id == current_user.id,
-            UserBook.title == body.title,
-            UserBook.author == body.author,
+            Book.title == body.title,
+            Author.name == body.author,
         ).first()
     if existing:
         raise HTTPException(status_code=400, detail="Book already in your list")
 
+    book = get_or_create_book(db, body.title, body.author, body.cover, body.work_id)
     entry = UserBook(
         user_id=current_user.id,
-        title=body.title,
-        author=body.author,
-        cover=body.cover,
-        status=body.status,
+        book_id=book.id,
+        status_id=status_by_name(db, body.status).id,
         rating=body.rating,
         progress=body.progress,
         total_pages=body.total_pages,
-        work_id=body.work_id,
     )
     apply_status_dates(entry, body.status)
     db.add(entry)
@@ -431,7 +478,7 @@ def update_book(book_id: int, body: BookUpdate, current_user: User = Depends(get
 
     if body.status is not None:
         apply_status_dates(entry, body.status)
-        entry.status = body.status
+        entry.status_id = status_by_name(db, body.status).id
         if body.status == "completed" and entry.total_pages:
             entry.progress = entry.total_pages
     if body.clear_rating:
@@ -446,14 +493,12 @@ def update_book(book_id: int, body: BookUpdate, current_user: User = Depends(get
         entry.total_pages = body.total_pages
         if entry.progress is not None and entry.progress > body.total_pages:
             entry.progress = body.total_pages
-    if body.work_id is not None:
-        entry.work_id = body.work_id
     if body.note is not None:
         entry.note = body.note.strip() or None
     entry.updated_at = utcnow()
     db.commit()
     db.refresh(entry)
-    return serialize_book(entry, community_rating(db, entry.work_id))
+    return serialize_book(entry, community_rating(db, entry.book.work_id))
 
 
 @app.delete("/list/{book_id}")
@@ -473,7 +518,7 @@ def reread_book(book_id: int, current_user: User = Depends(get_current_user), db
         raise HTTPException(status_code=404, detail="Not found")
     entry.rereads += 1
     entry.progress = 0
-    entry.status = "reading"
+    entry.status_id = status_by_name(db, "reading").id
     entry.started_at = utcnow()
     entry.finished_at = None
     entry.updated_at = utcnow()
@@ -562,14 +607,16 @@ def top_subjects(subject_lists, k=3):
 def recommendations(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     books = (
         db.query(UserBook)
-        .filter(UserBook.user_id == current_user.id, UserBook.work_id.isnot(None))
+        .join(Book)
+        .options(joinedload(UserBook.book))
+        .filter(UserBook.user_id == current_user.id, Book.work_id.isnot(None))
         .order_by(UserBook.updated_at.desc())
         .all()
     )
     if not books:
         return {"books": [], "based_on": []}
 
-    owned = {b.work_id for b in books}
+    owned = {b.book.work_id for b in books}
     cache_key = (current_user.id, tuple(sorted(owned)))
     with _cache_lock:
         if cache_key in rec_cache:
@@ -579,8 +626,8 @@ def recommendations(current_user: User = Depends(get_current_user), db: Session 
     for b in books[:8]:
         try:
             data = _cached_get(
-                f"book_{b.work_id}", book_cache,
-                f"https://openlibrary.org/works/{b.work_id}.json",
+                f"book_{b.book.work_id}", book_cache,
+                f"https://openlibrary.org/works/{b.book.work_id}.json",
             )
             subject_lists.append(data.get("subjects", []))
         except Exception:

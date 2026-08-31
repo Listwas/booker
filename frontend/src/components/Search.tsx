@@ -70,8 +70,9 @@ function Search() {
         <div className={styles.search_container}>
             <input
                 className={`${styles.search} ${isFetching ? styles.fetching : ""}`}
-                type="text"
+                type="search"
                 placeholder={t("search_placeholder")}
+                aria-label={t("search_placeholder")}
                 value={query}
                 onChange={(e) => {
                     setQuery(e.target.value)

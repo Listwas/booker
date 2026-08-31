@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
@@ -12,9 +12,10 @@ import styles from './BookCard.module.css'
 interface BookCardProps {
     book: OpenLibraryBook
     hideAddButton?: boolean
+    clone?: boolean
 }
 
-function BookCard({ book, hideAddButton = false }: BookCardProps) {
+function BookCard({ book, hideAddButton = false, clone = false }: BookCardProps) {
     const { title, author, cover, work_id, community } = book
     const { token, listIds } = useAuth()
     const { t, te } = useLang()
@@ -72,7 +73,7 @@ function BookCard({ book, hideAddButton = false }: BookCardProps) {
         addMutation.mutate()
     }
 
-    const open = () => navigate(`/book/${work_id}`)
+    const href = work_id ? `/book/${work_id}` : null
 
     // prefetch on hover so the book page opens instantly
     const prefetch = () => {
@@ -84,18 +85,33 @@ function BookCard({ book, hideAddButton = false }: BookCardProps) {
         })
     }
 
+    const coverImage = (
+        <img
+            src={cover}
+            alt={`Cover of ${title}`}
+            loading="lazy"
+            onLoad={() => setImgLoaded(true)}
+            data-loaded={imgLoaded}
+            className="book-cover"
+        />
+    )
+
+    const caption = (
+        <>
+            <span className={styles.author}>{author}</span>
+            <p className={styles.title}>{title}</p>
+        </>
+    )
+
     return (
         <div className={styles.bookcard_container} onMouseEnter={prefetch}>
-            <div className={styles.cover_container} onClick={open}>
-                <img
-                    src={cover}
-                    alt={`Cover of ${title}`}
-                    loading="lazy"
-                    onLoad={() => setImgLoaded(true)}
-                    data-loaded={imgLoaded}
-                    className="book-cover"
-                />
-            </div>
+            {href ? (
+                <Link to={href} className={styles.cover_container} tabIndex={-1} aria-hidden>
+                    {coverImage}
+                </Link>
+            ) : (
+                <div className={styles.cover_container}>{coverImage}</div>
+            )}
 
             <div className={styles.info_card}>
                 <div className={styles.top_part}>
@@ -115,17 +131,22 @@ function BookCard({ book, hideAddButton = false }: BookCardProps) {
                             className={`${styles.add_btn} ${added ? styles.added : ""}`}
                             onClick={handleAdd}
                             disabled={added || addMutation.isPending}
+                            tabIndex={clone ? -1 : undefined}
                             title={added ? t("card_in_library") : t("card_add")}
+                            aria-label={`${added ? t("card_in_library") : t("card_add")}: ${title}`}
                         >
                             {addMutation.isPending ? "…" : added ? "✓" : "+"}
                         </button>
                     )}
                 </div>
 
-                <div className={styles.bottom_part} onClick={open}>
-                    <span className={styles.author}>{author}</span>
-                    <p className={styles.title}>{title}</p>
-                </div>
+                {href ? (
+                    <Link to={href} className={styles.bottom_part} tabIndex={clone ? -1 : undefined}>
+                        {caption}
+                    </Link>
+                ) : (
+                    <div className={styles.bottom_part}>{caption}</div>
+                )}
             </div>
         </div>
     )

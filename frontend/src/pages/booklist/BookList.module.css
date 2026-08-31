@@ -31,7 +31,7 @@
     height: 28px;
     border-radius: 50%;
     background: hsla(47, 92%, 53%, 0.15);
-    color: var(--accent);
+    color: var(--accent-fg);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -67,6 +67,15 @@
 
 .cta_btn:hover {
     opacity: 0.88;
+}
+
+@media (pointer: coarse) {
+    .cta_btn,
+    .filter_btn,
+    .add_btn,
+    .refresh_btn {
+        min-height: 34px;
+    }
 }
 
 .library_header {
@@ -357,10 +366,10 @@
 
 .reread_badge {
     font-size: 0.65rem;
-    color: #f59e0b;
+    color: var(--status-hold);
     display: inline-block;
     margin-top: 4px;
-    background: rgba(245, 158, 11, 0.15);
+    background: var(--status-hold-soft);
     padding: 2px 8px;
     border-radius: 12px;
 }
@@ -438,11 +447,6 @@
     color: var(--bg-dark-text-95);
 }
 
-[data-theme="light"] .status_select {
-    background: white;
-    color: #333;
-}
-
 [data-theme="light"] .status_select option {
     background: white;
     color: #333;
@@ -501,9 +505,9 @@
 }
 
 .reread_btn:hover {
-    border-color: #f59e0b;
-    color: #f59e0b;
-    background: rgba(245, 158, 11, 0.1);
+    border-color: var(--status-hold);
+    color: var(--status-hold);
+    background: var(--status-hold-soft);
 }
 
 .reset_btn {
@@ -529,9 +533,9 @@
 }
 
 .delete_btn:hover {
-    border-color: #ef4444;
-    color: #ef4444;
-    background: rgba(239, 68, 68, 0.1);
+    border-color: var(--status-dropped);
+    color: var(--status-dropped);
+    background: var(--status-dropped-soft);
 }
 
 .empty {

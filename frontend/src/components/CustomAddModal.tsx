@@ -42,27 +42,38 @@ export default function AddCustomBook({ onClose, onAdded }: Props) {
 
     const handleKey = (e: React.KeyboardEvent) => {
         if (e.key === "Enter" && title.trim() && author.trim()) mutation.mutate()
-        if (e.key === "Escape") onClose()
     }
 
     return (
         <div className={s.overlay} onClick={onClose}>
-            <div className={s.modal} onClick={(e) => e.stopPropagation()}>
+            <div
+                className={s.modal}
+                role="dialog"
+                aria-modal="true"
+                aria-label={t("modal_title")}
+                onClick={(e) => e.stopPropagation()}
+                onKeyDown={(e) => {
+                    if (e.key === "Escape") onClose()
+                }}
+            >
                 <div className={s.header}>
                     <span className={s.modal_title}>{t("modal_title")}</span>
-                    <button className={s.close_btn} onClick={onClose}>✕</button>
+                    <button className={s.close_btn} onClick={onClose} aria-label={t("cancel")}>✕</button>
                 </div>
 
                 <input
                     name="title"
                     placeholder={t("modal_book_title")}
+                    aria-label={t("modal_book_title")}
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     onKeyDown={handleKey}
+                    autoFocus
                 />
                 <input
                     name="author"
                     placeholder={t("modal_author")}
+                    aria-label={t("modal_author")}
                     value={author}
                     onChange={(e) => setAuthor(e.target.value)}
                     onKeyDown={handleKey}
@@ -70,6 +81,7 @@ export default function AddCustomBook({ onClose, onAdded }: Props) {
                 <input
                     name="cover"
                     placeholder={t("modal_cover")}
+                    aria-label={t("modal_cover")}
                     value={cover}
                     onChange={(e) => setCover(e.target.value)}
                     onKeyDown={handleKey}

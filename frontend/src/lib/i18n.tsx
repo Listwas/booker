@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback } from "react"
+import { createContext, useContext, useEffect, useState, useCallback } from "react"
 
 // flat dictionaries + {var} interpolation
 
@@ -17,12 +17,15 @@ const en = {
     search_all_results: 'all results for "{q}" ↵',
     search_results_for: "results for",
     search_nothing_found: "nothing found",
+    search_type_something: "type a title or an author to search the catalogue",
 
     // home feeds
     feed_picked: "picked for you",
     feed_because: "because you read {subjects}",
     feed_error: "couldn't load books, openlibrary might be down",
     feed_retry: "try again",
+    feed_prev: "previous books",
+    feed_next: "next books",
     genre_fantasy: "fantasy",
     genre_scifi: "sci-fi",
     genre_mystery: "mystery",
@@ -200,11 +203,14 @@ const pl: typeof en = {
     search_all_results: 'wszystkie wyniki dla "{q}" ↵',
     search_results_for: "wyniki dla",
     search_nothing_found: "nic nie znaleziono",
+    search_type_something: "wpisz tytuł albo autora, żeby przeszukać katalog",
 
     feed_picked: "wybrane dla ciebie",
     feed_because: "bo czytasz {subjects}",
     feed_error: "nie udało się pobrać książek, openlibrary może nie działać",
     feed_retry: "spróbuj ponownie",
+    feed_prev: "poprzednie książki",
+    feed_next: "następne książki",
     genre_fantasy: "fantastyka",
     genre_scifi: "sci-fi",
     genre_mystery: "kryminał",
@@ -397,6 +403,10 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
         localStorage.setItem("lang", l)
         setLangState(l)
     }, [])
+
+    useEffect(() => {
+        document.documentElement.lang = lang
+    }, [lang])
 
     const t = useCallback(
         (key: TKey, vars?: Record<string, string | number>) => {

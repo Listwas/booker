@@ -126,7 +126,7 @@
 }
 
 .box input.invalid {
-    border-color: hsl(0, 70%, 55%);
+    border-color: var(--status-dropped);
 }
 
 .hint {
@@ -137,7 +137,7 @@
 }
 
 .error {
-    color: hsl(0, 70%, 60%);
+    color: var(--status-dropped);
     font-size: 0.78rem;
     margin: 0;
 }

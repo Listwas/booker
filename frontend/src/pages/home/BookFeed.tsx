@@ -22,6 +22,7 @@ interface FeedRowProps {
 
 // looped row: list rendered 3x, scroll silently shifts by one copy width
 function FeedRow({ header, sub, books, isLoading, isError, onRetry }: FeedRowProps) {
+    const { t } = useLang()
     const ref = useRef<HTMLDivElement>(null)
     const looped = books.length >= LOOP_MIN
     const display = looped ? [...books, ...books, ...books] : books
@@ -68,7 +69,11 @@ function FeedRow({ header, sub, books, isLoading, isError, onRetry }: FeedRowPro
                 {sub && <span className={styles.feed_sub}>{sub}</span>}
             </h2>
             <div className={styles.carousel_wrapper}>
-                <button className={`${styles.arrow} ${styles.arrow_left}`} onClick={() => scroll(-1)}>‹</button>
+                <button
+                    className={`${styles.arrow} ${styles.arrow_left}`}
+                    onClick={() => scroll(-1)}
+                    aria-label={t("feed_prev")}
+                >‹</button>
 
                 <div className={styles.cards_row} ref={ref} onScroll={handleScroll}>
                     {isLoading
@@ -79,12 +84,16 @@ function FeedRow({ header, sub, books, isLoading, isError, onRetry }: FeedRowPro
                         ))
                         : display.map((b, i) => (
                             <div className={styles.card_wrap} key={`${b.work_id}-${i}`}>
-                                <BookCard book={b} />
+                                <BookCard book={b} clone={looped && (i < books.length || i >= books.length * 2)} />
                             </div>
                         ))}
                 </div>
 
-                <button className={`${styles.arrow} ${styles.arrow_right}`} onClick={() => scroll(1)}>›</button>
+                <button
+                    className={`${styles.arrow} ${styles.arrow_right}`}
+                    onClick={() => scroll(1)}
+                    aria-label={t("feed_next")}
+                >›</button>
             </div>
         </div>
     )

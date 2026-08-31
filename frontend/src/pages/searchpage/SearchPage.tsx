@@ -5,12 +5,14 @@ import BookCard from '../../components/BookCard'
 import BookCardSkeleton from '../../components/BookCardSkeleton'
 import { apiSearch } from '../../lib/api'
 import { useLang } from '../../lib/i18n'
+import { useTitle } from '../../lib/title'
 import s from './SearchPage.module.css'
 
 export default function SearchPage() {
     const { t } = useLang()
     const [params] = useSearchParams()
     const q = params.get("q") ?? ""
+    useTitle(q)
 
     // two rows of five
     const { data, isLoading } = useQuery({
@@ -26,10 +28,14 @@ export default function SearchPage() {
         <>
             <Nav />
             <div className={s.page}>
-                <p className={s.heading}>
-                    {t("search_results_for")} <span>"{q}"</span>
-                </p>
-                {isLoading ? (
+                {q.trim() && (
+                    <p className={s.heading}>
+                        {t("search_results_for")} <span>"{q}"</span>
+                    </p>
+                )}
+                {!q.trim() ? (
+                    <p className={s.empty}>{t("search_type_something")}</p>
+                ) : isLoading ? (
                     <div className={s.grid}>
                         {Array.from({ length: 10 }).map((_, i) => (
                             <BookCardSkeleton key={i} />

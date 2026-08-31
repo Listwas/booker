@@ -1,11 +1,13 @@
 import Nav from "../../components/Nav"
 import { Footer } from "../../components/Nav"
 import { useLang } from "../../lib/i18n"
+import { useTitle } from "../../lib/title"
 import BookFeed, { RecommendedFeed } from "./BookFeed"
 import s from "./Home.module.css"
 
 export default function Home() {
     const { t } = useLang()
+    useTitle("")
     return (
         <>
             <Nav />

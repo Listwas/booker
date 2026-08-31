@@ -13,7 +13,25 @@
     --bg-dark-text-count: hsla(0, 0%, 95%, 0.8);
     --accent: hsl(47, 92%, 53%);
     --accent-ink: hsl(0, 0%, 10%);
-    --star-rating: var(--accent);
+    --accent-fg: var(--accent);
+    --star-rating: var(--accent-fg);
+
+    --status-reading: #3b82f6;
+    --status-plan: #7b828e;
+    --status-completed: #22c55e;
+    --status-dropped: #ef4444;
+    --status-hold: #f59e0b;
+
+    --status-reading-soft: color-mix(in srgb, var(--status-reading) 12%, transparent);
+    --status-reading-line: color-mix(in srgb, var(--status-reading) 25%, transparent);
+    --status-plan-soft: color-mix(in srgb, var(--status-plan) 12%, transparent);
+    --status-plan-line: color-mix(in srgb, var(--status-plan) 25%, transparent);
+    --status-completed-soft: color-mix(in srgb, var(--status-completed) 12%, transparent);
+    --status-completed-line: color-mix(in srgb, var(--status-completed) 25%, transparent);
+    --status-dropped-soft: color-mix(in srgb, var(--status-dropped) 12%, transparent);
+    --status-dropped-line: color-mix(in srgb, var(--status-dropped) 25%, transparent);
+    --status-hold-soft: color-mix(in srgb, var(--status-hold) 12%, transparent);
+    --status-hold-line: color-mix(in srgb, var(--status-hold) 25%, transparent);
 
     color: var(--bg-dark-text-95);
     background-color: var(--bg-dark-0);
@@ -32,6 +50,14 @@
     --bg-dark-text-95: hsl(0, 0%, 8%);
     --bg-dark-text-70: hsl(0, 0%, 30%);
     --bg-dark-text-count: hsla(0, 0%, 8%, 0.7);
+    --accent-fg: hsl(43, 100%, 27%);
+
+    --status-reading: #1d4ed8;
+    --status-plan: #4b5563;
+    --status-completed: #166534;
+    --status-dropped: #b91c1c;
+    --status-hold: #92400e;
+
     color: var(--bg-dark-text-95);
     background-color: var(--bg-dark-0);
 }
@@ -54,7 +80,7 @@ button, input, select, textarea {
 }
 
 :focus-visible {
-    outline: 2px solid var(--accent);
+    outline: 2px solid var(--accent-fg);
     outline-offset: 2px;
 }
 
@@ -109,7 +135,7 @@ input[type="number"].clean-number {
 .toast {
     background: var(--bg-dark-5);
     border: 1px solid var(--bg-dark-button-30);
-    border-left: 3px solid hsl(47, 92%, 53%);
+    border-left: 3px solid var(--accent-fg);
     color: var(--bg-dark-text-95);
     padding: 12px 18px;
     border-radius: 6px;
@@ -121,7 +147,7 @@ input[type="number"].clean-number {
 }
 
 .toast_error {
-    border-left-color: hsl(0, 72%, 55%);
+    border-left-color: var(--status-dropped);
 }
 
 @keyframes toast_in {

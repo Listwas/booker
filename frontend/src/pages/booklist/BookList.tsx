@@ -17,8 +17,9 @@ import {
     type BookPatch,
 } from "../../lib/api"
 import { useLang, type TKey } from "../../lib/i18n"
+import { useTitle } from "../../lib/title"
 import { SORTS, sortBooks, type SortKey } from "../../lib/sort"
-import { STATUSES, STATUS_COLORS, type BookStatus, type UserBook } from "../../lib/types"
+import { STATUSES, statusColors, type BookStatus, type UserBook } from "../../lib/types"
 import s from "./BookList.module.css"
 
 const LIST_KEY = ["list", "all"] as const
@@ -39,6 +40,7 @@ export default function BookList() {
     const { user, token, loading } = useAuth()
     const { t } = useLang()
     const navigate = useNavigate()
+    useTitle(t("nav_library"))
 
     if (loading) {
         return (
@@ -101,7 +103,7 @@ function GuestLibrary({ onCta }: { onCta: () => void }) {
                                 <span />
                             </div>
                             {books.map((b) => {
-                                const color = STATUS_COLORS[b.status as BookStatus] ?? "#888"
+                                const c = statusColors(b.status as BookStatus)
                                 return (
                                     // demo entries come without db ids
                                     <div className={s.table_row} key={b.work_id ?? b.title}>
@@ -119,7 +121,7 @@ function GuestLibrary({ onCta }: { onCta: () => void }) {
                                         </span>
                                         <span
                                             className={s.status_pill}
-                                            style={{ backgroundColor: `${color}20`, color }}
+                                            style={{ backgroundColor: c.soft, color: c.text }}
                                         >
                                             {t(`status_${b.status}` as TKey)}
                                         </span>
@@ -240,17 +242,19 @@ function UserLibrary({ token }: { token: string }) {
                         {STATUSES.map((st) => {
                             const active = status === st.key
                             const count = counts[st.key] ?? 0
+                            const c = st.key === "all" ? null : statusColors(st.key)
                             return (
                                 <button
                                     key={st.key}
                                     className={`${s.filter_btn} ${active ? s.active : ""}`}
                                     onClick={() => setStatus(st.key)}
+                                    aria-pressed={active}
                                     style={
-                                        active && st.key !== "all"
+                                        active && c
                                             ? {
-                                                backgroundColor: `${st.color}20`,
-                                                borderColor: st.color,
-                                                color: st.color,
+                                                backgroundColor: c.soft,
+                                                borderColor: c.text,
+                                                color: c.text,
                                             }
                                             : undefined
                                     }
@@ -436,7 +440,7 @@ function LibraryRow({
         }
     }
 
-    const color = STATUS_COLORS[book.status as BookStatus] ?? "#888"
+    const c = statusColors(book.status)
 
     return (
         <div className={s.table_row}>
@@ -490,10 +494,11 @@ function LibraryRow({
             <select
                 className={s.status_select}
                 value={book.status}
+                aria-label={t("col_status")}
                 style={{
-                    backgroundColor: `${color}20`,
-                    color,
-                    borderColor: `${color}40`,
+                    backgroundColor: c.soft,
+                    color: c.text,
+                    borderColor: c.line,
                 }}
                 onChange={(e) => {
                     const newStatus = e.target.value as BookStatus

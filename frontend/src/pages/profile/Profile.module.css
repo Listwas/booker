@@ -326,8 +326,8 @@
 }
 
 .danger_ghost_btn:hover {
-    border-color: hsl(0, 70%, 55%);
-    color: hsl(0, 70%, 60%);
+    border-color: var(--status-dropped);
+    color: var(--status-dropped);
 }
 
 .danger_confirm {

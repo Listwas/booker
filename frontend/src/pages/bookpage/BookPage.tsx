@@ -7,7 +7,8 @@ import Nav, { Footer } from "../../components/Nav"
 import StarRating from "../../components/StarRating"
 import { apiBook, apiAddBook, apiBookDescription, apiList, apiPatchBook, ApiError, type BookPatch } from "../../lib/api"
 import { useLang, pluralRatings, type Lang, type TKey } from "../../lib/i18n"
-import { STATUSES, STATUS_COLORS, type BookStatus, type UserBook } from "../../lib/types"
+import { useTitle } from "../../lib/title"
+import { STATUSES, statusColors, type BookStatus, type UserBook } from "../../lib/types"
 import s from "./BookPage.module.css"
 
 const LIST_KEY = ["list", "all"] as const
@@ -37,6 +38,8 @@ export default function BookPage() {
         staleTime: 30 * 1000,
     })
     const entry = list?.find((b) => b.work_id === workId)
+
+    useTitle(book?.title ?? "")
 
     const added = !!entry || (!!listIds && !!workId && listIds.work_ids.includes(workId))
 
@@ -284,7 +287,7 @@ function UserEntryPanel({ entry, token }: { entry: UserBook; token: string }) {
         },
     })
 
-    const color = STATUS_COLORS[entry.status] ?? "#888"
+    const c = statusColors(entry.status)
     const started = formatDate(entry.started_at, lang)
     const finished = formatDate(entry.finished_at, lang)
 
@@ -299,7 +302,8 @@ function UserEntryPanel({ entry, token }: { entry: UserBook; token: string }) {
                 <select
                     className={s.entry_status}
                     value={entry.status}
-                    style={{ backgroundColor: `${color}20`, color, borderColor: `${color}40` }}
+                    aria-label={t("col_status")}
+                    style={{ backgroundColor: c.soft, color: c.text, borderColor: c.line }}
                     onChange={(e) => patchMutation.mutate({ status: e.target.value as BookStatus })}
                 >
                     {STATUSES.filter((st) => st.key !== "all").map((st) => (

@@ -88,19 +88,19 @@ export interface ProfileData {
   monthly?: MonthlyStat[]
 }
 
-export const STATUSES: { key: BookStatus | "all"; color: string }[] = [
-  { key: "all", color: "" },
-  { key: "reading", color: "#3b82f6" },
-  { key: "plan", color: "#6b7280" },
-  { key: "completed", color: "#22c55e" },
-  { key: "dropped", color: "#ef4444" },
-  { key: "hold", color: "#f59e0b" },
+export const STATUSES: { key: BookStatus | "all" }[] = [
+  { key: "all" },
+  { key: "reading" },
+  { key: "plan" },
+  { key: "completed" },
+  { key: "dropped" },
+  { key: "hold" },
 ]
 
-export const STATUS_COLORS: Record<BookStatus, string> = {
-  reading: "#3b82f6",
-  plan: "#6b7280",
-  completed: "#22c55e",
-  dropped: "#ef4444",
-  hold: "#f59e0b",
+export function statusColors(status: BookStatus) {
+  return {
+    text: `var(--status-${status})`,
+    soft: `var(--status-${status}-soft)`,
+    line: `var(--status-${status}-line)`,
+  }
 }

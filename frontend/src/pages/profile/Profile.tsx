@@ -8,6 +8,7 @@ import BookCard from "../../components/BookCard"
 import { apiProfile, apiList, apiExport, apiDeleteAccount, apiChangePassword, apiSetAvatar, apiSetBanner, ApiError } from "../../lib/api"
 import { resizeImage } from "../../lib/image"
 import { useLang, type Lang, type TKey } from "../../lib/i18n"
+import { useTitle } from "../../lib/title"
 import type { MonthlyStat, ProfileData, UserBook } from "../../lib/types"
 import s from "./Profile.module.css"
 
@@ -52,6 +53,7 @@ const SEGMENTS = [
 export default function Profile() {
     const { token, user, loading } = useAuth()
     const { t } = useLang()
+    useTitle(t("nav_profile"))
 
     const { data } = useQuery<ProfileData>({
         queryKey: ["profile"],

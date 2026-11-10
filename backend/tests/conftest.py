@@ -6,6 +6,7 @@ import tempfile
 _tmp = tempfile.NamedTemporaryFile(suffix=".db", delete=False)
 _tmp.close()
 os.environ["BOOKER_DATABASE_URL"] = f"sqlite:///{_tmp.name}"
+os.environ.setdefault("BOOKER_SECRET_KEY", "booker-tests-only-disposable-signing-key")
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 

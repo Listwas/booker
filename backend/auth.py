@@ -5,8 +5,9 @@ from jose import JWTError, jwt
 from argon2 import PasswordHasher
 from argon2.exceptions import VerifyMismatchError
 
-# dev fallback, set BOOKER_SECRET_KEY in a real deployment
-SECRET_KEY = os.environ.get("BOOKER_SECRET_KEY", "booker-dev-secret")
+SECRET_KEY = os.environ.get("BOOKER_SECRET_KEY", "")
+if len(SECRET_KEY.strip()) < 32:
+    raise RuntimeError("Set BOOKER_SECRET_KEY to a random value of at least 32 characters")
 ALGORITHM = "HS256"
 EXPIRE_MINUTES = 60 * 24
 

@@ -37,16 +37,35 @@ docker compose down
 
 `--build` is only needed the first time and after code changes. day to day a plain `docker compose up -d` just starts the image you already have.
 
-the db lands in a named volume, so it survives rebuilds. for anything public set your own `BOOKER_SECRET_KEY`: copy `.env.example` to `.env` (or just drop the `.example` from the name), put a random value in it and docker compose picks it up on its own. running locally for yourself? skip it, there's a default.
+before starting, copy `.env.example` to `.env` and fill `BOOKER_SECRET_KEY` with a random value of at least 32 characters. there is no default signing key. docker compose reads `.env` automatically. to generate a key without installing python on the host:
+
+```sh
+docker run --rm python:3.12-slim python -c "import secrets; print(secrets.token_urlsafe(48))"
+```
+
+paste the output after `BOOKER_SECRET_KEY=` and keep `.env` private. the db lands in a named volume, so it survives rebuilds. for public use, put the app behind an HTTPS reverse proxy and keep the signing key stable across restarts.
 
 on windows: install [docker desktop](https://www.docker.com/products/docker-desktop/) first (it sets up wsl2 for you), then open a regular cmd, `cd` into the project folder and run the same `docker compose up -d --build`. when windows firewall asks for permission, click allow, and make sure your wi-fi is set to "private" if you want to open the app from your phone. no python or node needed for this route.
 
-without docker it's two steps, build the frontend and run the production server (it serves the built files plus the api under `/api`):
+without docker, use Python 3.12 and Node.js 22.12 or newer from the 22.x line. from a fresh checkout:
 
 ```sh
-cd frontend && npm run build
-cd ../backend && uvicorn main:server --host 0.0.0.0 --port 8000
+cd frontend
+npm ci
+npm run build
+cd ../backend
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.txt
 ```
+
+prepare `.env` in the repository root as above. with python installed, `python -c "import secrets; print(secrets.token_urlsafe(48))"` also generates a key. from `backend/`, with the virtual environment active:
+
+```sh
+uvicorn main:server --env-file ../.env --host 127.0.0.1 --port 8000
+```
+
+this serves the built frontend and the API under `/api`. on Windows, activate the virtual environment with `.venv\Scripts\activate` instead of `source`. bind to `0.0.0.0` only when access from other devices is intended.
 
 ## development
 
@@ -56,24 +75,32 @@ backend:
 cd backend
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-uvicorn main:app --reload
+uvicorn main:app --env-file ../.env --reload
 ```
 
 frontend:
 
 ```sh
 cd frontend
-npm install
+npm ci
 npm run dev     # http://localhost:5173
 ```
 
 the vite dev server proxies `/api` to the backend, so both need to be running. api docs (swagger) are at http://127.0.0.1:8000/docs.
 
-env (optional): `BOOKER_SECRET_KEY` for jwt signing, `BOOKER_DATABASE_URL` to move the sqlite file, `VITE_API_BASE` if the api lives somewhere else.
+env: `BOOKER_SECRET_KEY` is required for jwt signing. optional: `BOOKER_DATABASE_URL` to move the sqlite file, `VITE_API_BASE` if the api lives somewhere else. use the same key for each run; changing it signs out existing sessions.
+
 
 ## tests
 
 ```sh
-cd backend && pip install -r requirements-dev.txt && python -m pytest tests/
-cd frontend && npm test
+# from the repository root, after the installation steps above
+cd backend
+python -m pip install -r requirements-dev.txt
+python -m pytest tests/
+cd ../frontend
+npm ci
+npm test
+npm run lint
+npm run build
 ```

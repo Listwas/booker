@@ -1,5 +1,6 @@
 import csv
 import io
+import math
 import re
 import time
 from fastapi import FastAPI, Depends, HTTPException, BackgroundTasks
@@ -42,7 +43,17 @@ def _cached_get(key, cache, url, params=None):
     with _cache_lock:
         if key in cache:
             return cache[key]
-    data = requests.get(url, params=params, timeout=15).json()
+    response = requests.get(url, params=params, timeout=15)
+    if response.status_code == 404:
+        raise HTTPException(status_code=404, detail="Book not found")
+    response.raise_for_status()
+    data = response.json()
+    if not isinstance(data, dict):
+        raise ValueError("Invalid catalog response")
+    if data.get("error"):
+        if data["error"] == "notfound":
+            raise HTTPException(status_code=404, detail="Book not found")
+        raise ValueError("Invalid catalog response")
     with _cache_lock:
         cache[key] = data
     return data
@@ -128,11 +139,14 @@ def get_or_create_book(db, title, author_name, cover, work_id):
     if work_id:
         book = db.query(Book).filter(Book.work_id == work_id).first()
     else:
-        book = db.query(Book).filter(Book.title == title, Book.author_id == author.id).first()
+        book = db.query(Book).filter(Book.title == title, Book.author_id == author.id,
+                                     Book.work_id.is_(None)).first()
     if not book:
         book = Book(title=title, cover=cover or "", work_id=work_id, author_id=author.id)
         db.add(book)
         db.flush()
+    elif work_id:
+        book.title, book.cover, book.author_id = title, cover or "", author.id
     return book
 
 
@@ -241,9 +255,13 @@ def login(form: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get
     key = form.username.lower()
     now = time.time()
     with _attempts_lock:
-        recent = [t for t in login_attempts.get(key, []) if now - t < LOGIN_WINDOW]
-        login_attempts[key] = recent
-        if len(recent) >= MAX_LOGIN_ATTEMPTS:
+        for name, times in list(login_attempts.items()):
+            fresh = [t for t in times if now - t < LOGIN_WINDOW]
+            if fresh:
+                login_attempts[name] = fresh
+            else:
+                del login_attempts[name]
+        if len(login_attempts.get(key, [])) >= MAX_LOGIN_ATTEMPTS:
             raise HTTPException(status_code=429, detail="Too many failed logins, try again later")
 
     user = db.query(User).filter(User.username == form.username).first()
@@ -436,22 +454,22 @@ def add_book(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    existing = None
-    if body.work_id:
-        existing = db.query(UserBook).join(Book).filter(
-            UserBook.user_id == current_user.id,
-            Book.work_id == body.work_id,
-        ).first()
-    if not existing and not body.work_id:
-        existing = db.query(UserBook).join(Book).join(Author).filter(
-            UserBook.user_id == current_user.id,
-            Book.title == body.title,
-            Author.name == body.author,
-        ).first()
-    if existing:
+    title, author, cover, work_id = body.title, body.author, body.cover, body.work_id
+    if work_id:
+        metadata = catalog_metadata(work_id)
+        title, author, cover, work_id = (
+            metadata["title"], metadata["author"], metadata["cover"], metadata["work_id"],
+        )
+    existing = db.query(UserBook).join(Book).filter(UserBook.user_id == current_user.id)
+    if work_id:
+        existing = existing.filter(Book.work_id == work_id)
+    else:
+        existing = existing.join(Author).filter(Book.title == title, Author.name == author,
+                                                Book.work_id.is_(None))
+    if existing.first():
         raise HTTPException(status_code=400, detail="Book already in your list")
 
-    book = get_or_create_book(db, body.title, body.author, body.cover, body.work_id)
+    book = get_or_create_book(db, title, author, cover, work_id)
     entry = UserBook(
         user_id=current_user.id,
         book_id=book.id,
@@ -466,8 +484,8 @@ def add_book(
     db.refresh(entry)
 
     # fetch page count in background so the response returns instantly
-    if body.work_id and body.total_pages is None:
-        background_tasks.add_task(_fetch_pages_background, entry.id, body.work_id)
+    if work_id and body.total_pages is None:
+        background_tasks.add_task(_fetch_pages_background, entry.id, work_id)
 
     return serialize_book(entry)
 
@@ -546,19 +564,25 @@ SEARCH_FIELDS = "title,author_name,cover_i,key,ratings_average,ratings_count"
 
 def openlibrary_rating(avg, count):
     # fallback when no booker user rated a book
-    if avg and count:
+    if (isinstance(avg, (int, float)) and math.isfinite(avg) and 0 <= avg <= 5
+            and isinstance(count, int) and count > 0):
         return {"rating": round(avg, 1), "count": count, "source": "openlibrary"}
     return {"rating": None, "count": 0, "source": None}
 
 
 def docs_to_books(docs, db):
-    docs = [d for d in docs if d.get("cover_i")]
-    work_ids = [d.get("key", "").replace("/works/", "") for d in docs]
+    if not isinstance(docs, list):
+        raise HTTPException(status_code=502, detail="invalid catalog response")
+    docs = [d for d in docs if isinstance(d, dict) and isinstance(d.get("cover_i"), int) and d["cover_i"] > 0
+            and isinstance(d.get("title"), str) and d["title"].strip()
+            and isinstance(d.get("key"), str) and re.fullmatch(r"/works/OL[0-9]+W", d["key"])
+            and isinstance(d.get("author_name", []), list)]
+    work_ids = [d["key"].removeprefix("/works/") for d in docs]
     ratings = community_ratings(db, work_ids)
     return [
         {
-            "title": d.get("title"),
-            "author": (d.get("author_name") or ["Unknown"])[0],
+            "title": d["title"],
+            "author": next((a for a in d.get("author_name", []) if isinstance(a, str) and a.strip()), "Unknown"),
             "cover": f"https://covers.openlibrary.org/b/id/{d['cover_i']}-M.jpg",
             "work_id": work_id,
             "community": ratings.get(work_id)
@@ -580,7 +604,7 @@ def get_books(genre: str, limit: int = 20, db: Session = Depends(get_db)):
         )
     except Exception:
         raise HTTPException(status_code=502, detail="couldn't reach openlibrary")
-    return {"books": docs_to_books(data.get("docs", []), db)}
+    return {"books": docs_to_books(data.get("docs"), db)}
 
 
 # openlibrary subjects that say nothing about taste
@@ -605,6 +629,14 @@ def top_subjects(subject_lists, k=3):
     return [s for s, _ in ranked[:k]]
 
 
+def recommendation_ratings(result, db):
+    ratings = community_ratings(db, [b["work_id"] for b in result["books"]])
+    return {**result, "books": [
+        {**book, "community": ratings.get(book["work_id"]) or book["community"]}
+        for book in result["books"]
+    ]}
+
+
 @app.get("/recommendations")
 def recommendations(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     books = (
@@ -621,22 +653,26 @@ def recommendations(current_user: User = Depends(get_current_user), db: Session 
     owned = {b.book.work_id for b in books}
     cache_key = (current_user.id, tuple(sorted(owned)))
     with _cache_lock:
-        if cache_key in rec_cache:
-            return rec_cache[cache_key]
+        cached = rec_cache.get(cache_key)
+    if cached is not None:
+        return recommendation_ratings(cached, db)
 
     subject_lists = []
+    failures = 0
     for b in books[:8]:
         try:
-            data = _cached_get(
-                f"book_{b.book.work_id}", book_cache,
-                f"https://openlibrary.org/works/{b.book.work_id}.json",
-            )
+            _, data = load_work(b.book.work_id, require_title=False)
             subject_lists.append(data.get("subjects", []))
         except Exception:
+            failures += 1
             continue
+    if failures == len(books[:8]):
+        raise HTTPException(status_code=502, detail="couldn't reach openlibrary")
 
     picked, based_on, seen = [], [], set(owned)
-    for subject in top_subjects(subject_lists):
+    subjects = top_subjects(subject_lists)
+    search_failures = 0
+    for subject in subjects:
         try:
             data = _cached_get(
                 f"rec_{subject}", genre_cache,
@@ -644,8 +680,14 @@ def recommendations(current_user: User = Depends(get_current_user), db: Session 
                 params={"subject": subject, "language": "eng", "limit": 30, "fields": SEARCH_FIELDS},
             )
         except Exception:
+            search_failures += 1
             continue
-        fresh = [bk for bk in docs_to_books(data.get("docs", []), db) if bk["work_id"] not in seen]
+        candidates = docs_to_books(data.get("docs"), db)
+        fallbacks = {d.get("key", "").removeprefix("/works/"):
+                     openlibrary_rating(d.get("ratings_average"), d.get("ratings_count"))
+                     for d in data.get("docs", []) if isinstance(d, dict)}
+        fresh = [{**bk, "community": fallbacks[bk["work_id"]]}
+                 for bk in candidates if bk["work_id"] not in seen]
         if fresh:
             based_on.append(subject)
             for bk in fresh:
@@ -654,10 +696,12 @@ def recommendations(current_user: User = Depends(get_current_user), db: Session 
         if len(picked) >= 20:
             break
 
+    if subjects and search_failures == len(subjects):
+        raise HTTPException(status_code=502, detail="couldn't reach openlibrary")
     result = {"books": picked[:20], "based_on": based_on}
     with _cache_lock:
         rec_cache[cache_key] = result
-    return result
+    return recommendation_ratings(result, db)
 
 
 @app.get("/search")
@@ -671,38 +715,96 @@ def search_books(q: str, limit: int = 20, db: Session = Depends(get_db)):
         )
     except Exception:
         raise HTTPException(status_code=502, detail="couldn't reach openlibrary")
-    return {"books": docs_to_books(data.get("docs", []), db)}
+    return {"books": docs_to_books(data.get("docs"), db)}
+
+
+def load_work(work_id, require_title=True):
+    for _ in range(4):
+        if not re.fullmatch(r"OL[0-9]+W", work_id):
+            raise HTTPException(status_code=404, detail="Book not found")
+        try:
+            data = _cached_get(f"book_{work_id}", book_cache,
+                               f"https://openlibrary.org/works/{work_id}.json")
+        except HTTPException:
+            raise
+        except Exception:
+            raise HTTPException(status_code=502, detail="couldn't reach openlibrary")
+        if not isinstance(data, dict):
+            raise HTTPException(status_code=502, detail="invalid catalog response")
+        if data.get("error") == "notfound":
+            raise HTTPException(status_code=404, detail="Book not found")
+        if data.get("error"):
+            raise HTTPException(status_code=502, detail="invalid catalog response")
+        for field in ("subjects", "covers", "authors"):
+            if field in data and not isinstance(data[field], list):
+                raise HTTPException(status_code=502, detail="invalid catalog response")
+        if any(not isinstance(s, str) for s in data.get("subjects", [])):
+            raise HTTPException(status_code=502, detail="invalid catalog response")
+        if any(not isinstance(a, dict) or not isinstance(a.get("author", {}), dict)
+               for a in data.get("authors", [])):
+            raise HTTPException(status_code=502, detail="invalid catalog response")
+        description = data.get("description", "")
+        if not isinstance(description, str) and not (
+                isinstance(description, dict) and isinstance(description.get("value"), str)):
+            raise HTTPException(status_code=502, detail="invalid catalog response")
+        kind = data.get("type") or {}
+        if isinstance(kind, dict) and kind.get("key") == "/type/redirect":
+            location = data.get("location")
+            if not isinstance(location, str) or not re.fullmatch(r"/works/OL[0-9]+W", location):
+                raise HTTPException(status_code=502, detail="invalid catalog response")
+            work_id = location.rsplit("/", 1)[-1]
+            continue
+        if require_title and (not isinstance(data.get("title"), str) or not data["title"].strip()):
+            raise HTTPException(status_code=502, detail="invalid catalog response")
+        return work_id, data
+    raise HTTPException(status_code=502, detail="invalid catalog redirect")
+
+
+def work_authors(data, required=False):
+    authors = []
+    for item in data.get("authors", []):
+        author_key = item.get("author", {}).get("key", "")
+        if not isinstance(author_key, str) or not re.fullmatch(r"/authors/OL[0-9]+A", author_key):
+            if required:
+                raise HTTPException(status_code=502, detail="invalid catalog response")
+            continue
+        try:
+            author_data = _cached_get(f"author_{author_key}", book_cache,
+                                      f"https://openlibrary.org{author_key}.json")
+            name = author_data.get("name")
+            if not isinstance(name, str) or not name.strip():
+                raise ValueError("Missing author name")
+            authors.append(name.strip())
+        except Exception:
+            if required:
+                raise HTTPException(status_code=502, detail="couldn't reach openlibrary")
+            authors.append("Unknown")
+    return authors
+
+
+def catalog_metadata(work_id):
+    work_id, data = load_work(work_id)
+    authors = work_authors(data, required=True)
+    covers = data.get("covers") or []
+    cover_id = next((c for c in covers if isinstance(c, int) and c > 0), None)
+    return {"title": data["title"].strip(), "author": authors[0] if authors else "Unknown",
+            "cover": f"https://covers.openlibrary.org/b/id/{cover_id}-L.jpg" if cover_id else "",
+            "work_id": work_id}
 
 
 @app.get("/book/{work_id}")
 def get_book(work_id: str, db: Session = Depends(get_db)):
-    cache_key = f"book_{work_id}"
-    url = f"https://openlibrary.org/works/{work_id}.json"
-    try:
-        data = _cached_get(cache_key, book_cache, url)
-    except Exception:
-        raise HTTPException(status_code=502, detail="couldn't reach openlibrary")
-
+    work_id, data = load_work(work_id)
     description = data.get("description", "")
     if isinstance(description, dict):
         description = description.get("value", "")
 
     subjects = data.get("subjects", [])[:6]
 
-    authors = []
-    for a in data.get("authors", []):
-        author_key = a.get("author", {}).get("key", "")
-        if author_key:
-            try:
-                author_data = _cached_get(
-                    f"author_{author_key}", book_cache, f"https://openlibrary.org{author_key}.json"
-                )
-                authors.append(author_data.get("name", "Unknown"))
-            except Exception:
-                authors.append("Unknown")
-
-    covers = data.get("covers", [])
-    cover = f"https://covers.openlibrary.org/b/id/{covers[0]}-L.jpg" if covers else ""
+    authors = work_authors(data)
+    covers = data.get("covers") or []
+    cover_id = next((c for c in covers if isinstance(c, int) and c > 0), None)
+    cover = f"https://covers.openlibrary.org/b/id/{cover_id}-L.jpg" if cover_id else ""
 
     community = community_rating(db, work_id)
     if not community:
@@ -761,7 +863,7 @@ def translate_description(work_id: str, lang: str = "pl"):
         if cache_key in translation_cache:
             return translation_cache[cache_key]
 
-    data = _cached_get(f"book_{work_id}", book_cache, f"https://openlibrary.org/works/{work_id}.json")
+    _, data = load_work(work_id, require_title=False)
     description = data.get("description", "")
     if isinstance(description, dict):
         description = description.get("value", "")
@@ -799,29 +901,23 @@ def get_book_metadata(work_id: str):
         if cache_key in meta_cache:
             return meta_cache[cache_key]
 
-    pages = None
+    work_id, work = load_work(work_id)
+    fallback = work.get("number_of_pages")
+    fallback = fallback if isinstance(fallback, int) and fallback > 0 else None
     try:
-        ed = requests.get(
-            f"https://openlibrary.org/works/{work_id}/editions.json",
-            params={"limit": 20},
-            timeout=15,
-        ).json()
-        for entry in ed.get("entries", []):
-            p = entry.get("number_of_pages")
-            if isinstance(p, int) and p > 0:
-                pages = p
-                break
+        editions = _cached_get(f"editions_{work_id}", book_cache,
+                               f"https://openlibrary.org/works/{work_id}/editions.json",
+                               params={"limit": 20})
+        entries = editions.get("entries")
+        if not isinstance(entries, list):
+            raise ValueError("Invalid editions response")
+        pages = next((entry["number_of_pages"] for entry in entries
+                      if isinstance(entry, dict) and isinstance(entry.get("number_of_pages"), int)
+                      and entry["number_of_pages"] > 0), fallback)
     except Exception:
-        pass
-
-    if not pages:
-        try:
-            data = _cached_get(f"book_{work_id}", book_cache, f"https://openlibrary.org/works/{work_id}.json")
-            p = data.get("number_of_pages")
-            if isinstance(p, int) and p > 0:
-                pages = p
-        except Exception:
-            pass
+        if fallback is None:
+            raise HTTPException(status_code=502, detail="couldn't reach openlibrary")
+        pages = fallback
 
     result = {"total_pages": pages}
     with _cache_lock:

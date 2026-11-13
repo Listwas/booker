@@ -7,7 +7,7 @@ so they can browse a library before signing up
 DEMO_BOOKS = [
     {"title": "The Name of the Wind", "author": "Patrick Rothfuss", "cover": "https://covers.openlibrary.org/b/id/9326654-M.jpg", "status": "completed", "rating": 5.0, "progress": 662, "total_pages": 662, "rereads": 0, "work_id": "OL17354253W"},
     {"title": "The Way of Kings", "author": "Brandon Sanderson", "cover": "https://covers.openlibrary.org/b/id/8146092-M.jpg", "status": "completed", "rating": 5.0, "progress": 1007, "total_pages": 1007, "rereads": 1, "work_id": "OL15646042W"},
-    {"title": "Dune", "author": "Frank Herbert", "cover": "https://covers.openlibrary.org/b/id/8760472-M.jpg", "status": "reading", "rating": None, "progress": 312, "total_pages": 896, "rereads": 0, "work_id": "OL893415W"},
+    {"title": "Dune", "author": "Frank Herbert", "cover": "https://covers.openlibrary.org/b/id/8760472-M.jpg", "status": "reading", "rating": None, "progress": 312, "total_pages": 896, "rereads": 0, "work_id": "OL893414W"},
     {"title": "Neuromancer", "author": "William Gibson", "cover": "https://covers.openlibrary.org/b/id/8775481-M.jpg", "status": "plan", "rating": None, "progress": 0, "total_pages": 271, "rereads": 0, "work_id": "OL834643W"},
     {"title": "Blood Meridian", "author": "Cormac McCarthy", "cover": "https://covers.openlibrary.org/b/id/8231856-M.jpg", "status": "dropped", "rating": 3.0, "progress": 140, "total_pages": 351, "rereads": 0, "work_id": "OL98567W"},
     {"title": "Foundation", "author": "Isaac Asimov", "cover": "https://covers.openlibrary.org/b/id/8398800-M.jpg", "status": "hold", "rating": None, "progress": 80, "total_pages": 255, "rereads": 0, "work_id": "OL46534W"},

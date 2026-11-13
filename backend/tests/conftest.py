@@ -21,6 +21,9 @@ from database import Base, engine, seed_statuses
 def no_openlibrary(monkeypatch):
     # tests never talk to openlibrary
     monkeypatch.setattr(main, "_fetch_pages_background", lambda *a, **k: None)
+    monkeypatch.setattr(main, "catalog_metadata", lambda work_id: {
+        "title": "Dune", "author": "Frank Herbert", "cover": "", "work_id": work_id,
+    })
 
 
 @pytest.fixture()
@@ -29,8 +32,9 @@ def client():
     Base.metadata.create_all(bind=engine)
     seed_statuses()
     main.login_attempts.clear()
-    main.rec_cache.clear()
-    main.translation_cache.clear()
+    for cache in (main.search_cache, main.genre_cache, main.book_cache,
+                  main.meta_cache, main.rec_cache, main.translation_cache):
+        cache.clear()
     with TestClient(main.app) as c:
         yield c
 

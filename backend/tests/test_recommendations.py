@@ -57,3 +57,22 @@ def test_recommendations_empty_without_books(client):
     headers = make_user(client)
     r = client.get("/recommendations", headers=headers)
     assert r.json() == {"books": [], "based_on": []}
+
+
+def test_cached_recommendations_refresh_and_clear_community_rating(client, monkeypatch):
+    monkeypatch.setattr(main, "_cached_get", fake_cached_get)
+    headers = make_user(client)
+    other = make_user(client, "other")
+    client.post("/list", json=OWNED, headers=headers)
+    entry = client.post("/list", headers=other, json={
+        "title": "Eternity", "author": "Author", "work_id": "OL46385W", "rating": 1,
+    }).json()
+    def recommended():
+        response = client.get("/recommendations", headers=headers)
+        assert response.status_code == 200, response.text
+        return next(b for b in response.json()["books"] if b["work_id"] == "OL46385W")
+    assert recommended()["community"]["rating"] == 1
+    client.patch(f"/list/{entry['id']}", headers=other, json={"rating": 5})
+    assert recommended()["community"]["rating"] == 5
+    client.patch(f"/list/{entry['id']}", headers=other, json={"clear_rating": True})
+    assert recommended()["community"] == {"rating": 4.1, "count": 321, "source": "openlibrary"}

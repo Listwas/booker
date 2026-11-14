@@ -1,7 +1,7 @@
 import csv
 import io
 
-from conftest import make_user
+from conftest import make_user, image_data
 
 BOOK = {"title": "Dune", "author": "Frank Herbert", "work_id": "OL893415W", "total_pages": 896}
 
@@ -58,7 +58,7 @@ def test_export_csv(client):
 
 def test_avatar_and_banner(client):
     headers = make_user(client)
-    img = "data:image/jpeg;base64,aGVsbG8="
+    img = image_data("JPEG")
 
     r = client.post("/me/avatar", json={"image": img}, headers=headers)
     assert r.status_code == 200

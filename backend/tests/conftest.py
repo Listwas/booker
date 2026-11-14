@@ -1,6 +1,10 @@
 import os
 import sys
 import tempfile
+import base64
+from io import BytesIO
+
+from PIL import Image
 
 # point the app at a throwaway db before database.py gets imported
 _tmp = tempfile.NamedTemporaryFile(suffix=".db", delete=False)
@@ -50,3 +54,10 @@ def make_user(client, username="reader", password="secret123"):
     r = client.post("/login", data={"username": username, "password": password})
     assert r.status_code == 200, r.text
     return {"Authorization": f"Bearer {r.json()['access_token']}"}
+
+
+def image_data(format="PNG", size=(2, 2)):
+    stream = BytesIO()
+    Image.new("RGB", size, color="blue").save(stream, format=format)
+    mime = "jpeg" if format == "JPEG" else format.lower()
+    return f"data:image/{mime};base64," + base64.b64encode(stream.getvalue()).decode()

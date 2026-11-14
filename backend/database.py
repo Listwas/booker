@@ -1,6 +1,6 @@
 import os
 from datetime import datetime, timezone
-from sqlalchemy import create_engine, inspect, text, Column, Integer, String, Float, DateTime, ForeignKey, Text
+from sqlalchemy import create_engine, inspect, text, event, CheckConstraint, Column, Index, Integer, String, Float, DateTime, ForeignKey, Text
 from sqlalchemy.orm import declarative_base, sessionmaker, relationship
 
 DATABASE_URL = os.environ.get("BOOKER_DATABASE_URL", "sqlite:///./booker.db")
@@ -12,6 +12,11 @@ Base = declarative_base()
 STATUS_NAMES = ["reading", "plan", "completed", "dropped", "hold"]
 
 
+@event.listens_for(engine, "connect")
+def _enable_foreign_keys(conn, _record):
+    conn.execute("PRAGMA foreign_keys=ON")
+
+
 def utcnow():
     return datetime.now(timezone.utc)
 
@@ -20,9 +25,9 @@ class User(Base):
     __tablename__ = "users"
 
     id = Column(Integer, primary_key=True, index=True)
-    username = Column(String, unique=True, index=True)
-    email = Column(String, unique=True, index=True)
-    hashed_password = Column(String)
+    username = Column(String, unique=True, index=True, nullable=False)
+    email = Column(String, unique=True, index=True, nullable=False)
+    hashed_password = Column(String, nullable=False)
     # data-url images, resized client-side
     avatar = Column(Text, nullable=True)
     banner = Column(Text, nullable=True)
@@ -34,7 +39,7 @@ class Author(Base):
     __tablename__ = "authors"
 
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, unique=True, index=True)
+    name = Column(String, unique=True, index=True, nullable=False)
 
     books = relationship("Book", back_populates="author")
 
@@ -43,17 +48,17 @@ class Status(Base):
     __tablename__ = "statuses"
 
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, unique=True)
+    name = Column(String, unique=True, nullable=False)
 
 
 class Book(Base):
     __tablename__ = "books"
 
     id = Column(Integer, primary_key=True, index=True)
-    title = Column(String, index=True)
+    title = Column(String, index=True, nullable=False)
     cover = Column(String, default="")
-    work_id = Column(String, nullable=True, index=True)
-    author_id = Column(Integer, ForeignKey("authors.id"))
+    work_id = Column(String, nullable=True, unique=True, index=True)
+    author_id = Column(Integer, ForeignKey("authors.id"), nullable=False)
 
     author = relationship("Author", back_populates="books")
     entries = relationship("UserBook", back_populates="book")
@@ -61,15 +66,23 @@ class Book(Base):
 
 class UserBook(Base):
     __tablename__ = "user_books"
+    __table_args__ = (
+        Index("ix_user_books_user_book", "user_id", "book_id", unique=True),
+        CheckConstraint("rating IS NULL OR (rating >= 0 AND rating <= 5)"),
+        CheckConstraint("progress IS NULL OR progress >= 0"),
+        CheckConstraint("total_pages IS NULL OR total_pages > 0"),
+        CheckConstraint("progress IS NULL OR total_pages IS NULL OR progress <= total_pages"),
+        CheckConstraint("rereads >= 0"),
+    )
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), index=True)
-    book_id = Column(Integer, ForeignKey("books.id"), index=True)
-    status_id = Column(Integer, ForeignKey("statuses.id"))
+    user_id = Column(Integer, ForeignKey("users.id"), index=True, nullable=False)
+    book_id = Column(Integer, ForeignKey("books.id"), index=True, nullable=False)
+    status_id = Column(Integer, ForeignKey("statuses.id"), nullable=False)
     rating = Column(Float, nullable=True)
     progress = Column(Integer, nullable=True)
     total_pages = Column(Integer, nullable=True)
-    rereads = Column(Integer, default=0)
+    rereads = Column(Integer, default=0, nullable=False)
     note = Column(Text, nullable=True)
     started_at = Column(DateTime, nullable=True)
     finished_at = Column(DateTime, nullable=True)

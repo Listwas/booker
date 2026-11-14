@@ -12,6 +12,7 @@ h11==0.16.0
 idna==3.10
 pydantic==2.13.4
 pydantic-core==2.46.4
+Pillow==13.0.0
 python-jose==3.5.0
 python-dotenv==1.2.4
 python-multipart==0.0.20

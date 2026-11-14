@@ -8,6 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response, JSONResponse
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.exc import IntegrityError
 from pydantic import BaseModel, EmailStr, Field, field_validator
 import requests
 from cachetools import TTLCache
@@ -17,6 +18,7 @@ from database import SessionLocal, User, UserBook, Book, Author, Status, STATUS_
 from auth import hash_password, verify_password, create_token, decode_token, token_matches_user
 from community import community_rating, community_ratings
 from demo_data import DEMO_BOOKS, demo_profile
+from images import validate_image
 
 app = FastAPI()
 
@@ -89,6 +91,18 @@ class BookEntry(BaseModel):
     progress: int | None = Field(default=None, ge=0)
     total_pages: int | None = Field(default=None, ge=1)
     work_id: str | None = None
+
+    @field_validator("title", "author", mode="before")
+    @classmethod
+    def strip_names(cls, value):
+        return value.strip() if isinstance(value, str) else value
+
+    @field_validator("work_id")
+    @classmethod
+    def valid_work_id(cls, value):
+        if value is not None and not re.fullmatch(r"OL[0-9]+W", value):
+            raise ValueError("Invalid Open Library work ID")
+        return value
 
     @field_validator("status")
     @classmethod
@@ -292,9 +306,7 @@ class ImageBody(BaseModel):
     @field_validator("image")
     @classmethod
     def must_be_image(cls, v):
-        if v is not None and not v.startswith("data:image/"):
-            raise ValueError("not an image data url")
-        return v
+        return validate_image(v)
 
 
 @app.post("/me/avatar")
@@ -345,6 +357,13 @@ EXPORT_FIELDS = [
 ]
 
 
+def spreadsheet_cell(value):
+    if isinstance(value, str) and (value.startswith(("\t", "\r", "\n"))
+                                    or value.lstrip().startswith(("=", "+", "-", "@"))):
+        return "'" + value
+    return value
+
+
 @app.get("/export")
 def export_library(format: str = "json", current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     books = (
@@ -359,7 +378,7 @@ def export_library(format: str = "json", current_user: User = Depends(get_curren
         buf = io.StringIO()
         writer = csv.DictWriter(buf, fieldnames=EXPORT_FIELDS)
         writer.writeheader()
-        writer.writerows(rows)
+        writer.writerows({key: spreadsheet_cell(value) for key, value in row.items()} for row in rows)
         return Response(
             buf.getvalue(),
             media_type="text/csv",
@@ -437,8 +456,11 @@ def _fetch_pages_background(book_id, work_id):
             db = SessionLocal()
             try:
                 entry = db.query(UserBook).filter(UserBook.id == book_id).first()
-                if entry and entry.total_pages is None:
+                if (entry and entry.total_pages is None
+                        and (entry.progress is None or entry.progress <= meta["total_pages"])):
                     entry.total_pages = meta["total_pages"]
+                    if entry.status.name == "completed":
+                        entry.progress = entry.total_pages
                     entry.updated_at = utcnow()
                     db.commit()
             finally:
@@ -460,6 +482,8 @@ def add_book(
         title, author, cover, work_id = (
             metadata["title"], metadata["author"], metadata["cover"], metadata["work_id"],
         )
+    if body.total_pages is not None and body.progress is not None and body.progress > body.total_pages:
+        raise HTTPException(status_code=400, detail="Progress cannot exceed total pages")
     existing = db.query(UserBook).join(Book).filter(UserBook.user_id == current_user.id)
     if work_id:
         existing = existing.filter(Book.work_id == work_id)
@@ -469,18 +493,26 @@ def add_book(
     if existing.first():
         raise HTTPException(status_code=400, detail="Book already in your list")
 
-    book = get_or_create_book(db, title, author, cover, work_id)
+    try:
+        book = get_or_create_book(db, title, author, cover, work_id)
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=409, detail="Book changed, try again")
     entry = UserBook(
         user_id=current_user.id,
         book_id=book.id,
         status_id=status_by_name(db, body.status).id,
         rating=body.rating,
-        progress=body.progress,
+        progress=body.total_pages if body.status == "completed" and body.total_pages else body.progress,
         total_pages=body.total_pages,
     )
     apply_status_dates(entry, body.status)
     db.add(entry)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=409, detail="Book changed, try again")
     db.refresh(entry)
 
     # fetch page count in background so the response returns instantly
@@ -496,23 +528,23 @@ def update_book(book_id: int, body: BookUpdate, current_user: User = Depends(get
     if not entry:
         raise HTTPException(status_code=404, detail="Not found")
 
+    total_pages = body.total_pages if body.total_pages is not None else entry.total_pages
+    progress = body.progress if body.progress is not None else entry.progress
+    status = body.status or entry.status.name
+    if total_pages is not None and progress is not None and progress > total_pages:
+        if body.progress is not None:
+            raise HTTPException(status_code=400, detail="Progress cannot exceed total pages")
+        progress = total_pages
+    if status == "completed" and total_pages is not None:
+        progress = total_pages
+    entry.total_pages, entry.progress = total_pages, progress
     if body.status is not None:
         apply_status_dates(entry, body.status)
         entry.status_id = status_by_name(db, body.status).id
-        if body.status == "completed" and entry.total_pages:
-            entry.progress = entry.total_pages
     if body.clear_rating:
         entry.rating = None
     elif body.rating is not None:
         entry.rating = body.rating
-    if body.progress is not None:
-        if entry.total_pages is not None and body.progress > entry.total_pages:
-            raise HTTPException(status_code=400, detail="Progress cannot exceed total pages")
-        entry.progress = body.progress
-    if body.total_pages is not None:
-        entry.total_pages = body.total_pages
-        if entry.progress is not None and entry.progress > body.total_pages:
-            entry.progress = body.total_pages
     if body.note is not None:
         entry.note = body.note.strip() or None
     entry.updated_at = utcnow()
@@ -536,6 +568,8 @@ def reread_book(book_id: int, current_user: User = Depends(get_current_user), db
     entry = db.query(UserBook).filter(UserBook.id == book_id, UserBook.user_id == current_user.id).first()
     if not entry:
         raise HTTPException(status_code=404, detail="Not found")
+    if entry.status.name != "completed":
+        raise HTTPException(status_code=400, detail="Finish the book before starting a reread")
     entry.rereads += 1
     entry.progress = 0
     entry.status_id = status_by_name(db, "reading").id

@@ -24,6 +24,7 @@ thesis project.
 - polish/english interface, plus on-demand description translation (mymemory)
 - library export to csv/json, password change, account deletion, login rate limiting
 - demo library for logged-out visitors, light/dark theme
+- description translation sends the complete text in UTF-8 chunks of up to 500 bytes; descriptions above 5000 bytes show an explicit limit instead of a partial translation. service quota failures leave the original available
 - works on phones too: the library turns into cards on small screens, touch targets get bigger, no ios zoom jumps
 
 ## deployment

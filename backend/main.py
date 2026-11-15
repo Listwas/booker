@@ -13,6 +13,7 @@ from pydantic import BaseModel, EmailStr, Field, field_validator
 import requests
 from cachetools import TTLCache
 import threading
+from typing import Literal
 
 from database import SessionLocal, User, UserBook, Book, Author, Status, STATUS_NAMES, utcnow
 from auth import hash_password, verify_password, create_token, decode_token, token_matches_user
@@ -864,34 +865,28 @@ def get_book(work_id: str, db: Session = Depends(get_db)):
     }
 
 
-def _split_chunks(text, limit=450):
-    # mymemory caps a request at ~500 chars
-    sentences = re.split(r"(?<=[.!?])\s+", text.replace("\r", ""))
-    pieces = []
-    for s in sentences:
-        s = s.strip()
-        while len(s) > limit:
-            cut = s.rfind(" ", 0, limit)
-            cut = cut if cut > 0 else limit
-            pieces.append(s[:cut])
-            s = s[cut:].strip()
-        if s:
-            pieces.append(s)
-
-    chunks, current = [], ""
-    for piece in pieces:
-        if len(current) + len(piece) + 1 > limit and current:
-            chunks.append(current)
-            current = piece
-        else:
-            current = f"{current} {piece}".strip()
-    if current:
-        chunks.append(current)
+def _split_chunks(text, limit=500):
+    text = re.sub(r"\s+", " ", text).strip()
+    chunks = []
+    while text:
+        size, end = 0, 0
+        for char in text:
+            size += len(char.encode("utf-8"))
+            if size > limit:
+                break
+            end += 1
+        if end == 0:
+            raise ValueError("Chunk limit is smaller than one character")
+        cut = end if end == len(text) else text.rfind(" ", 0, end + 1)
+        if cut <= 0:
+            cut = end
+        chunks.append(text[:cut])
+        text = text[cut:].lstrip()
     return chunks
 
 
 @app.get("/book/{work_id}/description")
-def translate_description(work_id: str, lang: str = "pl"):
+def translate_description(work_id: str, lang: Literal["pl", "en"] = "pl"):
     cache_key = (work_id, lang)
     with _cache_lock:
         if cache_key in translation_cache:
@@ -901,22 +896,26 @@ def translate_description(work_id: str, lang: str = "pl"):
     description = data.get("description", "")
     if isinstance(description, dict):
         description = description.get("value", "")
-    if not description:
-        return {"description": ""}
+    if not description or lang == "en":
+        return {"description": description}
+    if len(description.encode("utf-8")) > 5000:
+        raise HTTPException(status_code=413, detail="Description too long to translate")
 
     translated = []
     try:
-        for chunk in _split_chunks(description[:2500]):
-            r = requests.get(
+        for chunk in _split_chunks(description):
+            response = requests.get(
                 "https://api.mymemory.translated.net/get",
                 params={"q": chunk, "langpair": f"en|{lang}"},
                 timeout=15,
-            ).json()
+            )
+            response.raise_for_status()
+            r = response.json()
             if str(r.get("responseStatus")) != "200":
                 raise ValueError(r.get("responseDetails", "translation failed"))
             text = r["responseData"]["translatedText"]
             # exhausted quota comes back as a 200 with a warning string
-            if "MYMEMORY WARNING" in text.upper():
+            if not isinstance(text, str) or not text.strip() or "MYMEMORY WARNING" in text.upper():
                 raise ValueError("quota exhausted")
             translated.append(text)
     except Exception:

@@ -24,7 +24,7 @@ function Search() {
 
     const searching = query.trim().length >= 2
 
-    const { data, isFetching } = useQuery({
+    const { data, isFetching, isError, refetch } = useQuery({
         queryKey: ["search", debounced],
         queryFn: () => apiSearch(debounced, 5),
         enabled: debounced.length >= 2,
@@ -86,7 +86,16 @@ function Search() {
 
             {open && searching && (
                 <div className={styles.dropdown}>
-                    {results.length === 0 && (
+                    {isError && (
+                        <div className={styles.dropdown_status} role="alert">
+                            {t("load_failed")}
+                            <button type="button" onMouseDown={(e) => {
+                                e.preventDefault()
+                                void refetch()
+                            }}>{t("feed_retry")}</button>
+                        </div>
+                    )}
+                    {!isError && results.length === 0 && (
                         <div className={styles.dropdown_status}>
                             {stale ? t("search_searching") : t("search_no_results")}
                         </div>

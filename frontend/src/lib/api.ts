@@ -27,17 +27,21 @@ export async function api<T>(
       ? (opts.body as URLSearchParams)
       : JSON.stringify(opts.body)
 
-  const res = await fetch(`${API_BASE}${path}`, {
-    method: opts.method ?? "GET",
-    headers,
-    body,
-  })
+  let res: Response
+  try {
+    res = await fetch(`${API_BASE}${path}`, {
+      method: opts.method ?? "GET", headers, body,
+    })
+  } catch {
+    throw new ApiError(0, "Network unavailable")
+  }
 
   if (!res.ok) {
     let message = `Request failed (${res.status})`
     try {
       const data = await res.json()
-      message = data.detail || message
+      if (typeof data.detail === "string") message = data.detail
+      else if (Array.isArray(data.detail)) message = "Invalid input"
     } catch {
       // ignore parse errors
     }
@@ -100,9 +104,6 @@ export const apiSearch = (q: string, limit = 20) =>
 
 export const apiBook = (workId: string) =>
   api<BookDetail>(`/book/${workId}`)
-
-export const apiBookMeta = (workId: string) =>
-  api<{ total_pages: number | null }>(`/book/${workId}/metadata`)
 
 export const apiBookDescription = (workId: string, lang: string) =>
   api<{ description: string }>(`/book/${workId}/description?lang=${lang}`)

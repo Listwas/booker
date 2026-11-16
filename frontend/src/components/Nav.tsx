@@ -2,10 +2,11 @@ import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext.tsx'
 import { useLang } from '../lib/i18n'
 import Search from './Search.tsx'
+import QueryError from './QueryError'
 import s from './Nav.module.css'
 
 function Nav() {
-    const { user, logout } = useAuth()
+    const { user, logout, sessionError, retrySession } = useAuth()
     const { lang, setLang, t } = useLang()
     const navigate = useNavigate()
     const location = useLocation()
@@ -16,6 +17,8 @@ function Nav() {
         const next = current === "light" ? "dark" : "light"
         document.documentElement.setAttribute("data-theme", next)
         localStorage.setItem("theme", next)
+        const meta = document.querySelector('meta[name="theme-color"]')
+        if (meta) meta.setAttribute("content", next === "light" ? "#f5f5f5" : "#000000")
     }
 
     const handleLogout = () => {
@@ -64,6 +67,7 @@ function Nav() {
                     )}
                 </div>
             </div>
+            {sessionError && <QueryError onRetry={retrySession} />}
         </div>
     )
 }

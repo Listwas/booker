@@ -47,7 +47,7 @@ export default function Auth() {
     const [serverError, setServerError] = useState("")
 
     const { login, register: registerFn } = useAuth()
-    const { t, lang } = useLang()
+    const { t, te, lang } = useLang()
     const { showToast } = useToast()
     const navigate = useNavigate()
     const isRegister = mode === "register"
@@ -75,23 +75,15 @@ export default function Auth() {
         setServerError("")
         try {
             if (isRegister) {
-                const ok = await registerFn(values.username, values.email ?? "", values.password)
-                if (!ok) {
-                    setServerError(t("auth_err_register_failed"))
-                    return
-                }
+                await registerFn(values.username, values.email ?? "", values.password)
                 showToast(t("toast_welcome"))
             } else {
-                const ok = await login(values.username, values.password)
-                if (!ok) {
-                    setServerError(t("auth_err_login_failed"))
-                    return
-                }
+                await login(values.username, values.password)
                 showToast(t("toast_welcome_back"))
             }
             navigate("/")
         } catch (err) {
-            setServerError(err instanceof ApiError ? err.message : t("auth_err_generic"))
+            setServerError(err instanceof ApiError ? te(err.message) : t("auth_err_generic"))
         }
     }
 
@@ -130,6 +122,8 @@ export default function Auth() {
                             <input
                                 id="username"
                                 placeholder={t("auth_username_ph")}
+                                autoComplete="username"
+                                spellCheck={false}
                                 {...register("username")}
                                 disabled={isSubmitting}
                                 className={errors.username ? s.invalid : ""}
@@ -146,6 +140,8 @@ export default function Auth() {
                                     id="email"
                                     type="email"
                                     placeholder={t("auth_email_ph")}
+                                    autoComplete="email"
+                                    spellCheck={false}
                                     {...register("email")}
                                     disabled={isSubmitting}
                                     className={errors.email ? s.invalid : ""}
@@ -164,6 +160,7 @@ export default function Auth() {
                                 id="password"
                                 type="password"
                                 placeholder="••••••••"
+                                autoComplete={isRegister ? "new-password" : "current-password"}
                                 {...register("password")}
                                 disabled={isSubmitting}
                                 className={errors.password ? s.invalid : ""}
@@ -182,7 +179,7 @@ export default function Auth() {
                             className={s.submit}
                             disabled={isSubmitting}
                         >
-                            {isSubmitting ? "..." : isRegister ? t("auth_submit_register") : t("auth_submit_login")}
+                            {isSubmitting ? "…" : isRegister ? t("auth_submit_register") : t("auth_submit_login")}
                         </button>
                     </form>
 

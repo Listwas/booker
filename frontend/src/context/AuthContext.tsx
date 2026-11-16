@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback } from "react"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
-import { apiMe, apiListIds, apiLogin, apiRegister } from "../lib/api"
+import { apiMe, apiListIds, apiLogin, apiRegister, ApiError } from "../lib/api"
 import { useToast } from "./ToastContext"
 import { useLang } from "../lib/i18n"
 import type { AuthUser, ListIds } from "../lib/types"
@@ -10,8 +10,10 @@ interface AuthContextType {
     token: string | null
     listIds: ListIds | null
     loading: boolean
-    login: (username: string, password: string) => Promise<boolean>
-    register: (username: string, email: string, password: string) => Promise<boolean>
+    sessionError: boolean
+    retrySession: () => void
+    login: (username: string, password: string) => Promise<void>
+    register: (username: string, email: string, password: string) => Promise<void>
     logout: () => void
     refreshUser: () => void
 }
@@ -26,6 +28,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [user, setUser] = useState<AuthUser | null>(null)
     const [loading, setLoading] = useState(true)
 
+    const [sessionError, setSessionError] = useState(false)
+    const [sessionAttempt, setSessionAttempt] = useState(0)
+    const retrySession = () => {
+        setSessionError(false)
+        setLoading(true)
+        setSessionAttempt((value) => value + 1)
+    }
+
     // listIds is in tanstack query so invalidation propagates everywhere
     const listIdsQuery = useQuery<ListIds>({
         queryKey: ["listIds"],
@@ -39,15 +49,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setLoading(false)
             return
         }
+        let cancelled = false
         apiMe(token)
-            .then((d) => setUser(d))
-            .catch(() => {
-                localStorage.removeItem("token")
-                setToken(null)
-                setUser(null)
+            .then((data) => {
+                if (!cancelled) {
+                    setUser(data)
+                    setSessionError(false)
+                }
             })
-            .finally(() => setLoading(false))
-    }, [token])
+            .catch((error) => {
+                if (cancelled) return
+                if (error instanceof ApiError && error.status === 401) {
+                    localStorage.removeItem("token")
+                    setToken(null)
+                    setUser(null)
+                } else {
+                    setSessionError(true)
+                }
+            })
+            .finally(() => { if (!cancelled) setLoading(false) })
+        return () => { cancelled = true }
+    }, [token, sessionAttempt])
 
     // user-scoped queries, cleared on account switch
     const clearUserQueries = useCallback(() => {
@@ -72,34 +94,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const login = useCallback(
         async (username: string, password: string) => {
-            try {
-                const data = await apiLogin(username, password)
-                clearUserQueries()
-                localStorage.setItem("token", data.access_token)
-                localStorage.setItem("hasAccount", "true")
-                setToken(data.access_token)
-                const me = await apiMe(data.access_token)
-                setUser(me)
-                await qc.prefetchQuery({
-                    queryKey: ["listIds"],
-                    queryFn: () => apiListIds(data.access_token),
-                })
-                return true
-            } catch {
-                return false
-            }
+            const data = await apiLogin(username, password)
+            const me = await apiMe(data.access_token)
+            clearUserQueries()
+            localStorage.setItem("token", data.access_token)
+            localStorage.setItem("hasAccount", "true")
+            setSessionError(false)
+            setToken(data.access_token)
+            setUser(me)
+            await qc.prefetchQuery({
+                queryKey: ["listIds"],
+                queryFn: () => apiListIds(data.access_token),
+            })
         },
         [qc, clearUserQueries]
     )
 
     const register = useCallback(
         async (username: string, email: string, password: string) => {
-            try {
-                await apiRegister(username, email, password)
-                return await login(username, password)
-            } catch {
-                return false
-            }
+            await apiRegister(username, email, password)
+            await login(username, password)
         },
         [login]
     )
@@ -108,6 +122,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         localStorage.removeItem("token")
         setToken(null)
         setUser(null)
+        setSessionError(false)
         clearUserQueries()
     }, [clearUserQueries])
 
@@ -123,6 +138,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 token,
                 listIds: token ? listIdsQuery.data ?? null : null,
                 loading,
+                sessionError,
+                retrySession,
                 login,
                 register,
                 logout,

@@ -11,13 +11,14 @@ const en = {
     nav_register: "register",
 
     // search
-    search_placeholder: "search books...",
+    search_placeholder: "search books…",
     search_searching: "searching…",
     search_no_results: "no results",
     search_all_results: 'all results for "{q}" ↵',
     search_results_for: "results for",
     search_nothing_found: "nothing found",
     search_type_something: "type a title or an author to search the catalogue",
+    load_failed: "couldn't load data. check your connection and try again.",
 
     // home feeds
     feed_picked: "picked for you",
@@ -197,13 +198,14 @@ const pl: typeof en = {
     nav_login: "zaloguj",
     nav_register: "załóż konto",
 
-    search_placeholder: "szukaj książek...",
+    search_placeholder: "szukaj książek…",
     search_searching: "szukam…",
     search_no_results: "brak wyników",
     search_all_results: 'wszystkie wyniki dla "{q}" ↵',
     search_results_for: "wyniki dla",
     search_nothing_found: "nic nie znaleziono",
     search_type_something: "wpisz tytuł albo autora, żeby przeszukać katalog",
+    load_failed: "nie udało się pobrać danych. sprawdź połączenie i spróbuj ponownie.",
 
     feed_picked: "wybrane dla ciebie",
     feed_because: "bo czytasz {subjects}",
@@ -378,6 +380,12 @@ const backendPl: Record<string, string> = {
     "Progress cannot exceed total pages": "Postęp nie może przekraczać liczby stron",
     "Too many failed logins, try again later": "Za dużo nieudanych logowań, spróbuj później",
     "couldn't reach openlibrary": "brak połączenia z openlibrary",
+    "Network unavailable": "Brak połączenia z serwerem. Spróbuj ponownie",
+    "Invalid input": "Sprawdź poprawność wpisanych danych",
+    "Book not found": "Nie znaleziono książki w katalogu",
+    "Book changed, try again": "Dane książki się zmieniły. Spróbuj ponownie",
+    "Finish the book before starting a reread": "Najpierw ukończ książkę, zanim zaczniesz ponowną lekturę",
+    "Description too long to translate": "Opis jest za długi do tłumaczenia (limit 5000 bajtów). Dostępny jest pełny oryginał",
 }
 
 const dictionaries = { en, pl }

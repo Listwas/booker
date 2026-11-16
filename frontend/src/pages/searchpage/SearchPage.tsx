@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import Nav, { Footer } from '../../components/Nav'
 import BookCard from '../../components/BookCard'
 import BookCardSkeleton from '../../components/BookCardSkeleton'
+import QueryError from '../../components/QueryError'
 import { apiSearch } from '../../lib/api'
 import { useLang } from '../../lib/i18n'
 import { useTitle } from '../../lib/title'
@@ -15,7 +16,7 @@ export default function SearchPage() {
     useTitle(q)
 
     // two rows of five
-    const { data, isLoading } = useQuery({
+    const { data, isLoading, isError, refetch } = useQuery({
         queryKey: ["search", q, 10],
         queryFn: () => apiSearch(q, 10),
         enabled: q.trim().length > 0,
@@ -29,9 +30,9 @@ export default function SearchPage() {
             <Nav />
             <div className={s.page}>
                 {q.trim() && (
-                    <p className={s.heading}>
+                    <h1 className={s.heading}>
                         {t("search_results_for")} <span>"{q}"</span>
-                    </p>
+                    </h1>
                 )}
                 {!q.trim() ? (
                     <p className={s.empty}>{t("search_type_something")}</p>
@@ -41,6 +42,8 @@ export default function SearchPage() {
                             <BookCardSkeleton key={i} />
                         ))}
                     </div>
+                ) : isError ? (
+                    <QueryError onRetry={() => { void refetch() }} />
                 ) : books.length === 0 ? (
                     <p className={s.empty}>{t("search_nothing_found")}</p>
                 ) : (

@@ -1,10 +1,11 @@
 import { useState } from "react"
-import { useNavigate } from "react-router-dom"
+import { useNavigate, useSearchParams } from "react-router-dom"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { useAuth } from "../../context/AuthContext"
 import { useToast } from "../../context/ToastContext"
 import StarRating from "../../components/StarRating"
 import AddCustomModal from "../../components/CustomAddModal"
+import QueryError from "../../components/QueryError"
 import Nav, { Footer } from "../../components/Nav"
 import {
     apiList,
@@ -37,7 +38,7 @@ function Cover({ cover, title, onClick }: { cover: string; title: string; onClic
 }
 
 export default function BookList() {
-    const { user, token, loading } = useAuth()
+    const { user, token, loading, sessionError } = useAuth()
     const { t } = useLang()
     const navigate = useNavigate()
     useTitle(t("nav_library"))
@@ -51,6 +52,8 @@ export default function BookList() {
             </>
         )
     }
+
+    if (sessionError) return <><Nav /><Footer /></>
 
     if (!user || !token) {
         return <GuestLibrary onCta={() => navigate("/auth", { state: { mode: "register" } })} />
@@ -73,6 +76,7 @@ function GuestLibrary({ onCta }: { onCta: () => void }) {
         <>
             <Nav />
             <div className={s.page}>
+                <h1 className="sr-only">{t("nav_library")}</h1>
                 <div className={s.guest_banner}>
                     <div className={s.guest_banner_text}>
                         <div className={s.guest_icon}>★</div>
@@ -142,12 +146,24 @@ function UserLibrary({ token }: { token: string }) {
     const qc = useQueryClient()
     const { t, te } = useLang()
     const { showToast } = useToast()
-    const [status, setStatus] = useState<BookStatus | "all">("all")
-    const [sort, setSort] = useState<SortKey>("recent")
+    const [params, setParams] = useSearchParams()
     const [showModal, setShowModal] = useState(false)
 
+    // filter and sort live in the url so the view survives a refresh and can be shared
+    const statusParam = params.get("status") as BookStatus | "all" | null
+    const status = STATUSES.some((st) => st.key === statusParam) ? statusParam! : "all"
+    const sortParam = params.get("sort") as SortKey | null
+    const sort = SORTS.some((o) => o.key === sortParam) ? sortParam! : "recent"
+
+    const setParam = (key: string, value: string, fallback: string) => {
+        const next = new URLSearchParams(params)
+        if (value === fallback) next.delete(key)
+        else next.set(key, value)
+        setParams(next, { replace: true })
+    }
+
     // fetch once, filter/sort client-side so switching tabs is instant
-    const { data, isLoading, isFetching, refetch } = useQuery({
+    const { data, isLoading, isFetching, isError, refetch } = useQuery({
         queryKey: LIST_KEY,
         queryFn: () => apiList(token, "all"),
         staleTime: 30 * 1000,
@@ -237,6 +253,7 @@ function UserLibrary({ token }: { token: string }) {
         <>
             <Nav />
             <div className={s.page}>
+                <h1 className="sr-only">{t("nav_library")}</h1>
                 <div className={s.bar}>
                     <div className={s.filter_bar}>
                         {STATUSES.map((st) => {
@@ -247,7 +264,7 @@ function UserLibrary({ token }: { token: string }) {
                                 <button
                                     key={st.key}
                                     className={`${s.filter_btn} ${active ? s.active : ""}`}
-                                    onClick={() => setStatus(st.key)}
+                                    onClick={() => setParam("status", st.key, "all")}
                                     aria-pressed={active}
                                     style={
                                         active && c
@@ -270,7 +287,7 @@ function UserLibrary({ token }: { token: string }) {
                         <select
                             className={s.sort_select}
                             value={sort}
-                            onChange={(e) => setSort(e.target.value as SortKey)}
+                            onChange={(e) => setParam("sort", e.target.value, "recent")}
                         >
                             {SORTS.map((o) => (
                                 <option key={o.key} value={o.key}>{t(`sort_${o.key}` as TKey)}</option>
@@ -293,6 +310,8 @@ function UserLibrary({ token }: { token: string }) {
 
                 {isLoading ? (
                     <div className={s.loading}>{t("list_loading")}</div>
+                ) : isError ? (
+                    <QueryError onRetry={() => { void refetch() }} />
                 ) : books.length === 0 ? (
                     <div className={s.empty}>
                         {status === "all"
@@ -410,6 +429,7 @@ function LibraryRow({
     onOpen,
 }: LibraryRowProps) {
     const { t } = useLang()
+    const [confirmReset, setConfirmReset] = useState(false)
     const [draftRead, setDraftRead] = useState<string | null>(null)
     const [draftTotal, setDraftTotal] = useState<string | null>(null)
 
@@ -536,14 +556,31 @@ function LibraryRow({
                         ⟳
                     </button>
                 )}
-                {book.rereads > 0 && !confirmReread && (
-                    <button
-                        className={s.reset_btn}
-                        onClick={() => onResetReread(book.id, book.title)}
-                        title={t("title_reset_reread")}
-                    >
-                        ↺
-                    </button>
+                {book.rereads > 0 && !confirmReread && !confirmDelete && (
+                    confirmReset ? (
+                        <div className={s.confirm_group}>
+                            <button
+                                className={s.confirm_yes}
+                                onClick={() => {
+                                    onResetReread(book.id, book.title)
+                                    setConfirmReset(false)
+                                }}
+                            >
+                                {t("confirm_yes")}
+                            </button>
+                            <button className={s.confirm_no} onClick={() => setConfirmReset(false)}>
+                                {t("confirm_no")}
+                            </button>
+                        </div>
+                    ) : (
+                        <button
+                            className={s.reset_btn}
+                            onClick={() => setConfirmReset(true)}
+                            title={t("title_reset_reread")}
+                        >
+                            ↺
+                        </button>
+                    )
                 )}
                 {confirmDelete ? (
                     <div className={s.confirm_group}>

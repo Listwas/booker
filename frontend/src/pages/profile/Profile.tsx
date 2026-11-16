@@ -5,6 +5,7 @@ import { useAuth } from "../../context/AuthContext"
 import { useToast } from "../../context/ToastContext"
 import Nav, { Footer } from "../../components/Nav"
 import BookCard from "../../components/BookCard"
+import QueryError from "../../components/QueryError"
 import { apiProfile, apiList, apiExport, apiDeleteAccount, apiChangePassword, apiSetAvatar, apiSetBanner, ApiError } from "../../lib/api"
 import { resizeImage } from "../../lib/image"
 import { useLang, type Lang, type TKey } from "../../lib/i18n"
@@ -29,11 +30,15 @@ function MonthlyChart({ monthly }: { monthly: MonthlyStat[] }) {
                 {monthly.map((m) => (
                     <div className={s.chart_col} key={m.month}>
                         <span className={s.chart_value}>{m.books > 0 ? m.books : ""}</span>
-                        <div
-                            className={s.chart_bar}
-                            style={{ height: `${(m.books / max) * 100}%` }}
-                            title={`${m.month}: ${t("profile_books", { n: m.books })}`}
-                        />
+                        {m.books > 0 ? (
+                            <div
+                                className={s.chart_bar}
+                                style={{ height: `${(m.books / max) * 100}%` }}
+                                title={`${m.month}: ${t("profile_books", { n: m.books })}`}
+                            />
+                        ) : (
+                            <div className={s.chart_baseline} />
+                        )}
                         <span className={s.chart_label}>{monthLabel(m.month, lang)}</span>
                     </div>
                 ))}
@@ -51,17 +56,17 @@ const SEGMENTS = [
 ] as const
 
 export default function Profile() {
-    const { token, user, loading } = useAuth()
+    const { token, user, loading, sessionError } = useAuth()
     const { t } = useLang()
     useTitle(t("nav_profile"))
 
-    const { data } = useQuery<ProfileData>({
+    const { data, isLoading, isError, refetch } = useQuery<ProfileData>({
         queryKey: ["profile"],
         queryFn: () => apiProfile(token!),
         enabled: !!token,
     })
 
-    const { data: listData } = useQuery<UserBook[]>({
+    const { data: listData, isError: listError, refetch: retryList } = useQuery<UserBook[]>({
         queryKey: ["list", "all"],
         queryFn: () => apiList(token!, "all"),
         enabled: !!token,
@@ -77,6 +82,8 @@ export default function Profile() {
         )
     }
 
+    if (sessionError) return <><Nav /><Footer /></>
+
     if (!token || !user) {
         return (
             <>
@@ -90,10 +97,13 @@ export default function Profile() {
         )
     }
 
-    if (!data) {
+    if (isError) return <><Nav /><QueryError onRetry={() => { void refetch() }} /><Footer /></>
+
+    if (isLoading || !data) {
         return (
             <>
                 <Nav />
+                <p className={s.logged_out}>{t("loading")}</p>
                 <Footer />
             </>
         )
@@ -174,6 +184,7 @@ export default function Profile() {
 
                 <MonthlyChart monthly={data.monthly ?? []} />
 
+                {listError && <QueryError onRetry={() => { void retryList() }} />}
                 {recent.length > 0 && (
                     <section className={s.recent_section}>
                         <p className={s.section_title}>{t("profile_recent")}</p>
@@ -259,7 +270,7 @@ function ProfileHeader({ data, token }: { data: ProfileData; token: string }) {
                         : data.username.slice(0, 2).toUpperCase()}
                     <span className={s.avatar_hint}>{t("change_avatar")}</span>
                 </label>
-                <p className={s.username}>{data.username}</p>
+                <h1 className={s.username}>{data.username}</h1>
             </div>
         </>
     )
@@ -300,6 +311,7 @@ function PasswordChange({ token }: { token: string }) {
                         className={s.account_input}
                         type="password"
                         placeholder={t("current_password_ph")}
+                        autoComplete="current-password"
                         value={current}
                         onChange={(e) => setCurrent(e.target.value)}
                         autoFocus
@@ -308,6 +320,7 @@ function PasswordChange({ token }: { token: string }) {
                         className={s.account_input}
                         type="password"
                         placeholder={t("new_password_ph")}
+                        autoComplete="new-password"
                         value={next}
                         onChange={(e) => setNext(e.target.value)}
                     />
@@ -383,6 +396,7 @@ function AccountSection({ token }: { token: string }) {
                         <input
                             type="password"
                             placeholder={t("password_ph")}
+                            autoComplete="current-password"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
                             autoFocus

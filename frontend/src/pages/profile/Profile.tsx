@@ -279,6 +279,8 @@ function ProfileHeader({ data, token }: { data: ProfileData; token: string }) {
 function PasswordChange({ token }: { token: string }) {
     const { t, te } = useLang()
     const { showToast } = useToast()
+    const { logout } = useAuth()
+    const navigate = useNavigate()
     const [open, setOpen] = useState(false)
     const [current, setCurrent] = useState("")
     const [next, setNext] = useState("")
@@ -294,6 +296,8 @@ function PasswordChange({ token }: { token: string }) {
         setBusy(true)
         try {
             await apiChangePassword(token, current, next)
+            logout()
+            navigate("/auth", { state: { mode: "login" } })
             showToast(t("toast_password_changed"))
             close()
         } catch (err) {

@@ -1,3 +1,24 @@
+.control {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+}
+
+.glyph {
+    position: relative;
+    display: inline-flex;
+}
+
+.value {
+    max-width: 100%;
+    min-height: 28px;
+    background: var(--bg-dark-10);
+    color: var(--bg-dark-text-95);
+    border: 1px solid var(--bg-dark-button-30);
+    border-radius: 4px;
+}
+
 .s {
     display: flex;
     gap: 2px;
@@ -8,6 +29,7 @@
     line-height: 1;
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     color: var(--bg-dark-button-30);
     transition: color 0.1s;
 }
@@ -29,4 +51,11 @@
 
 .star.clickable:hover {
     color: var(--star-rating);
+}
+
+@media (pointer: coarse) {
+    .star.clickable {
+        min-width: 34px;
+        min-height: 34px;
+    }
 }

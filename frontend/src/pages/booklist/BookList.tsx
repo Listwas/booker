@@ -6,6 +6,8 @@ import { useToast } from "../../context/ToastContext"
 import StarRating from "../../components/StarRating"
 import AddCustomModal from "../../components/CustomAddModal"
 import QueryError from "../../components/QueryError"
+import CustomEntryModal from "../../components/CustomEntryModal"
+import { invalidateRatings } from "../../lib/ratings"
 import Nav, { Footer } from "../../components/Nav"
 import {
     apiList,
@@ -148,6 +150,7 @@ function UserLibrary({ token }: { token: string }) {
     const { showToast } = useToast()
     const [params, setParams] = useSearchParams()
     const [showModal, setShowModal] = useState(false)
+    const [customId, setCustomId] = useState<number | null>(null)
 
     // filter and sort live in the url so the view survives a refresh and can be shared
     const statusParam = params.get("status") as BookStatus | "all" | null
@@ -207,6 +210,7 @@ function UserLibrary({ token }: { token: string }) {
         onSuccess: (updated) => {
             setBook(updated)
             qc.invalidateQueries({ queryKey: ["profile"] })
+            void invalidateRatings(qc)
         },
     })
 
@@ -227,7 +231,7 @@ function UserLibrary({ token }: { token: string }) {
         onSuccess: async () => {
             await qc.invalidateQueries({ queryKey: ["listIds"] })
             await qc.invalidateQueries({ queryKey: ["profile"] })
-            await qc.invalidateQueries({ queryKey: ["recommendations"] })
+            await invalidateRatings(qc)
         },
     })
 
@@ -236,6 +240,7 @@ function UserLibrary({ token }: { token: string }) {
         onSuccess: (updated) => {
             setBook(updated)
             qc.invalidateQueries({ queryKey: ["profile"] })
+            void invalidateRatings(qc)
         },
         onError: () => showToast(t("toast_reread_failed"), "error"),
     })
@@ -245,6 +250,7 @@ function UserLibrary({ token }: { token: string }) {
         onSuccess: (updated) => {
             setBook(updated)
             qc.invalidateQueries({ queryKey: ["profile"] })
+            void invalidateRatings(qc)
         },
         onError: () => showToast(t("toast_reset_failed"), "error"),
     })
@@ -321,26 +327,32 @@ function UserLibrary({ token }: { token: string }) {
                 ) : (
                     <EditableTable
                         books={books}
+                        onOpenCustom={setCustomId}
                         onPatch={(id, body, msg) => {
-                            patchMutation.mutate({ id, body })
-                            if (msg) showToast(msg)
+                            patchMutation.mutate({ id, body }, {
+                                onSuccess: () => { if (msg) showToast(msg) },
+                            })
                         }}
                         onDelete={(id, title) => {
-                            deleteMutation.mutate(id)
-                            showToast(t("toast_removed", { title }))
+                            deleteMutation.mutate(id, { onSuccess: () => showToast(t("toast_removed", { title })) })
                         }}
                         onReread={(id, title) => {
-                            rereadMutation.mutate(id)
-                            showToast(t("toast_reread", { title }))
+                            rereadMutation.mutate(id, { onSuccess: () => showToast(t("toast_reread", { title })) })
                         }}
                         onResetReread={(id, title) => {
-                            resetRereadMutation.mutate(id)
-                            showToast(t("toast_reread_reset", { title }))
+                            resetRereadMutation.mutate(id, { onSuccess: () => showToast(t("toast_reread_reset", { title })) })
                         }}
                     />
                 )}
             </div>
 
+            {customId !== null && all.find((book) => book.id === customId) && (
+                <CustomEntryModal
+                    entry={all.find((book) => book.id === customId)!}
+                    token={token}
+                    onClose={() => setCustomId(null)}
+                />
+            )}
             {showModal && (
                 <AddCustomModal
                     onClose={() => setShowModal(false)}
@@ -356,13 +368,14 @@ function UserLibrary({ token }: { token: string }) {
 
 interface EditableTableProps {
     books: UserBook[]
+    onOpenCustom: (id: number) => void
     onPatch: (id: number, body: BookPatch, msg?: string) => void
     onDelete: (id: number, title: string) => void
     onReread: (id: number, title: string) => void
     onResetReread: (id: number, title: string) => void
 }
 
-function EditableTable({ books, onPatch, onDelete, onReread, onResetReread }: EditableTableProps) {
+function EditableTable({ books, onOpenCustom, onPatch, onDelete, onReread, onResetReread }: EditableTableProps) {
     const { t } = useLang()
     const navigate = useNavigate()
     const [confirmReread, setConfirmReread] = useState<number | null>(null)
@@ -394,7 +407,7 @@ function EditableTable({ books, onPatch, onDelete, onReread, onResetReread }: Ed
                         setConfirmDelete={(v) => setConfirmDelete(v ? b.id : null)}
                         onOpen={() => {
                             if (b.work_id) navigate(`/book/${b.work_id}`)
-                            else navigate(`/search?q=${encodeURIComponent(b.title)}`)
+                            else onOpenCustom(b.id)
                         }}
                     />
                 ))}
@@ -532,7 +545,7 @@ function LibraryRow({
             </select>
 
             <div className={s.col_actions}>
-                {confirmReread ? (
+                {book.status === "completed" && (confirmReread ? (
                     <div className={s.confirm_group}>
                         <button
                             className={s.confirm_yes}
@@ -555,7 +568,7 @@ function LibraryRow({
                     >
                         ⟳
                     </button>
-                )}
+                ))}
                 {book.rereads > 0 && !confirmReread && !confirmDelete && (
                     confirmReset ? (
                         <div className={s.confirm_group}>

@@ -33,6 +33,7 @@
     --status-hold-soft: color-mix(in srgb, var(--status-hold) 12%, transparent);
     --status-hold-line: color-mix(in srgb, var(--status-hold) 25%, transparent);
 
+    color-scheme: dark;
     color: var(--bg-dark-text-95);
     background-color: var(--bg-dark-0);
 }
@@ -58,6 +59,7 @@
     --status-dropped: #b91c1c;
     --status-hold: #92400e;
 
+    color-scheme: light;
     color: var(--bg-dark-text-95);
     background-color: var(--bg-dark-0);
 }
@@ -75,6 +77,11 @@ html, body, #root {
     font-family: "Inter", system-ui, sans-serif;
 }
 
+body {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+}
+
 button, input, select, textarea {
     font-family: inherit;
 }
@@ -82,6 +89,15 @@ button, input, select, textarea {
 :focus-visible {
     outline: 2px solid var(--accent-fg);
     outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
 }
 
 /* ios zooms inputs with fonts under 16px */
@@ -112,6 +128,18 @@ input[type="number"].clean-number {
 
 .app-footer {
     margin-top: auto;
+}
+
+/* page title for screen readers where the design has no visible one */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
 }
 
 .book-cover { background: var(--bg-dark-10); }
@@ -153,4 +181,18 @@ input[type="number"].clean-number {
 @keyframes toast_in {
     from { opacity: 0; transform: translateY(8px); }
     to { opacity: 1; transform: translateY(0); }
+}
+
+@media (pointer: coarse) {
+    #root button {
+        min-width: 34px;
+        min-height: 34px;
+    }
+}
+
+@media (max-width: 640px), (pointer: coarse) {
+    #root input, #root select, #root textarea {
+        font-size: 16px;
+        min-height: 34px;
+    }
 }

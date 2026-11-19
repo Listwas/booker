@@ -18,7 +18,21 @@ export default function CustomEntryModal({ entry, token, onClose }: {
         <div className={s.overlay} onClick={onClose}>
             <div className={s.modal} role="dialog" aria-modal="true" aria-label={entry.title}
                 onClick={(event) => event.stopPropagation()}
-                onKeyDown={(event) => { if (event.key === "Escape") onClose() }}>
+                onKeyDown={(event) => {
+                    if (event.key === "Escape") onClose()
+                    if (event.key !== "Tab") return
+                    const controls = event.currentTarget.querySelectorAll<HTMLElement>(
+                        'button:not(:disabled), select:not(:disabled), textarea:not(:disabled), a[href]'
+                    )
+                    const first = controls[0], last = controls[controls.length - 1]
+                    if (event.shiftKey && document.activeElement === first) {
+                        event.preventDefault()
+                        last?.focus()
+                    } else if (!event.shiftKey && document.activeElement === last) {
+                        event.preventDefault()
+                        first?.focus()
+                    }
+                }}>
                 <div className={s.header}>
                     <h2 className={s.modal_title}>{entry.title}</h2>
                     <button ref={close} className={s.close_btn} onClick={onClose} aria-label={t("cancel")}>✕</button>

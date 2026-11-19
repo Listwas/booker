@@ -98,6 +98,15 @@
     opacity: 1;
 }
 
+/* no hover on touch, so the arrows have to stay put */
+@media (pointer: coarse) {
+    .arrow {
+        opacity: 1;
+        width: 40px;
+        height: 40px;
+    }
+}
+
 .arrow:hover {
     border-color: var(--bg-dark-40);
 }

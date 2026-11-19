@@ -12,6 +12,7 @@ export default function Home() {
         <>
             <Nav />
             <div className={s.page_wrapper}>
+                <h1 className="sr-only">booker</h1>
                 <RecommendedFeed />
                 <BookFeed genre="fantasy" header={t("genre_fantasy")} />
                 <BookFeed genre="science-fiction" header={t("genre_scifi")} />

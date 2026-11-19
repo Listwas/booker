@@ -3,15 +3,16 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#000000" />
     <link rel="preconnect" href="https://covers.openlibrary.org" />
     <link rel="dns-prefetch" href="https://covers.openlibrary.org" />
     <title>booker</title>
     <script>
       // set theme before first paint to avoid a flash
-      document.documentElement.setAttribute(
-        "data-theme",
-        localStorage.getItem("theme") === "light" ? "light" : "dark"
-      )
+      var theme = localStorage.getItem("theme") === "light" ? "light" : "dark"
+      document.documentElement.setAttribute("data-theme", theme)
+      document.querySelector('meta[name="theme-color"]').content =
+        theme === "light" ? "#f5f5f5" : "#000000"
     </script>
   </head>
   <body>

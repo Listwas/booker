@@ -246,7 +246,7 @@
     text-decoration: none;
     font-size: 0.9rem;
     font-weight: 600;
-    transition: all 0.15s;
+    transition: opacity 0.15s;
 }
 
 .cta_btn:hover {
@@ -280,11 +280,17 @@
 .chart_bar {
     width: 100%;
     max-width: 56px;
-    min-height: 2px;
-    background: var(--accent);
+    background: var(--accent-fg);
     border-radius: 4px 4px 0 0;
     opacity: 0.85;
     transition: height 0.3s ease;
+}
+
+.chart_baseline {
+    width: 100%;
+    max-width: 56px;
+    height: 1px;
+    background: var(--bg-dark-20);
 }
 
 .chart_label {
@@ -312,7 +318,7 @@
     font-size: 0.8rem;
     font-family: inherit;
     cursor: pointer;
-    transition: all 0.15s;
+    transition: border-color 0.15s, color 0.15s;
 }
 
 .ghost_btn:hover {
@@ -346,7 +352,6 @@
     color: var(--bg-dark-text-95);
     font-size: 0.8rem;
     font-family: inherit;
-    outline: none;
     width: 140px;
 }
 
@@ -379,6 +384,5 @@
     color: var(--bg-dark-text-95);
     font-size: 0.8rem;
     font-family: inherit;
-    outline: none;
     width: 170px;
 }

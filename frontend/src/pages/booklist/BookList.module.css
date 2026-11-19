@@ -118,7 +118,7 @@
     color: var(--bg-dark-text-70);
     font-size: 0.8rem;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
     font-family: inherit;
 }
 
@@ -154,7 +154,6 @@
     color: var(--bg-dark-text-70);
     font-size: 0.8rem;
     cursor: pointer;
-    outline: none;
     font-family: inherit;
 }
 
@@ -166,7 +165,7 @@
     color: var(--bg-dark-text-70);
     font-size: 0.8rem;
     cursor: pointer;
-    transition: all 0.15s;
+    transition: background-color 0.15s, border-color 0.15s, color 0.15s;
     font-family: inherit;
 }
 
@@ -184,7 +183,7 @@
     color: var(--bg-dark-text-70);
     font-size: 0.8rem;
     cursor: pointer;
-    transition: all 0.15s;
+    transition: border-color 0.15s, color 0.15s;
     font-family: inherit;
     display: inline-flex;
     align-items: center;
@@ -268,8 +267,9 @@
         grid-template-columns: 64px 1fr auto;
         grid-template-areas:
             "cover info info"
-            "cover rating actions"
-            "cover pages status";
+            "cover rating rating"
+            "pages pages status"
+            "actions actions actions";
         row-gap: 10px;
         padding: 14px;
         border-radius: 0;
@@ -297,6 +297,15 @@
     .save_btn {
         width: 34px;
         height: 34px;
+    }
+}
+
+@media (pointer: coarse) and (min-width: 641px) {
+    .table {
+        min-width: 980px;
+    }
+    .table_header, .table_row {
+        grid-template-columns: 52px minmax(180px, 2fr) 180px 150px 130px 132px;
     }
 }
 
@@ -386,13 +395,13 @@
 
 .page_input {
     width: 52px;
+    font-variant-numeric: tabular-nums;
     padding: 6px 8px;
     background: transparent;
     border: none;
     color: var(--bg-dark-text-95);
     font-size: 0.8rem;
     text-align: center;
-    outline: none;
     font-family: inherit;
 }
 
@@ -419,7 +428,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.15s;
+    transition: background-color 0.15s, transform 0.15s;
 }
 
 .save_btn:hover {
@@ -435,10 +444,9 @@
     font-size: 0.75rem;
     font-weight: 500;
     cursor: pointer;
-    outline: none;
     font-family: inherit;
     width: 100%;
-    transition: all 0.15s;
+    transition: background-color 0.15s, border-color 0.15s, color 0.15s;
     color: inherit;
 }
 
@@ -495,7 +503,7 @@
     cursor: pointer;
     font-size: 0.9rem;
     padding: 6px 10px;
-    transition: all 0.15s;
+    transition: background-color 0.15s, border-color 0.15s, color 0.15s;
     font-family: inherit;
     width: 28px;
     height: 28px;
@@ -518,7 +526,7 @@
     cursor: pointer;
     font-size: 0.85rem;
     padding: 6px 10px;
-    transition: all 0.15s;
+    transition: border-color 0.15s, color 0.15s;
     font-family: inherit;
     width: 28px;
     height: 28px;
@@ -559,6 +567,7 @@
 
 .pages_static {
     font-size: 0.8rem;
+    font-variant-numeric: tabular-nums;
     color: var(--bg-dark-text-70);
 }
 

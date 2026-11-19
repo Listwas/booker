@@ -66,7 +66,7 @@ export default function BookList() {
 
 function GuestLibrary({ onCta }: { onCta: () => void }) {
     const { t } = useLang()
-    const { data, isLoading } = useQuery({
+    const { data, isLoading, isError, refetch } = useQuery({
         queryKey: ["demo"],
         queryFn: () => apiDemo(),
         staleTime: 60 * 60 * 1000,
@@ -97,6 +97,8 @@ function GuestLibrary({ onCta }: { onCta: () => void }) {
 
                 {isLoading ? (
                     <div className={s.loading}>{t("list_loading_demo")}</div>
+                ) : isError ? (
+                    <QueryError onRetry={() => { void refetch() }} />
                 ) : (
                     <div className={s.table_scroll}>
                         <div className={s.table}>
@@ -565,6 +567,7 @@ function LibraryRow({
                         className={s.reread_btn}
                         onClick={() => setConfirmReread(true)}
                         title={t("title_reread")}
+                        aria-label={t("title_reread")}
                     >
                         ⟳
                     </button>
@@ -590,6 +593,7 @@ function LibraryRow({
                             className={s.reset_btn}
                             onClick={() => setConfirmReset(true)}
                             title={t("title_reset_reread")}
+                        aria-label={t("title_reset_reread")}
                         >
                             ↺
                         </button>
@@ -615,6 +619,7 @@ function LibraryRow({
                         className={s.delete_btn}
                         onClick={() => setConfirmDelete(true)}
                         title={t("title_remove")}
+                        aria-label={t("title_remove")}
                     >
                         ✕
                     </button>

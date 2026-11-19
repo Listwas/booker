@@ -131,16 +131,15 @@ export function RecommendedFeed() {
     const { token } = useAuth()
     const { t } = useLang()
 
-    const { data, isLoading, isError } = useQuery({
+    const { data, isLoading, isError, refetch } = useQuery({
         queryKey: ["recommendations"],
         queryFn: () => apiRecommendations(token!),
         enabled: !!token,
         staleTime: 30 * 60 * 1000,
     })
 
-    // bonus row, hidden on error
-    if (!token || isError) return null
-    if (!isLoading && (data?.books.length ?? 0) === 0) return null
+    if (!token) return null
+    if (!isLoading && !isError && (data?.books.length ?? 0) === 0) return null
 
     return (
         <FeedRow
@@ -148,6 +147,8 @@ export function RecommendedFeed() {
             sub={data?.based_on.length ? t("feed_because", { subjects: data.based_on.join(", ") }) : undefined}
             books={data?.books ?? []}
             isLoading={isLoading}
+            isError={isError}
+            onRetry={() => { void refetch() }}
         />
     )
 }

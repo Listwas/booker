@@ -15,7 +15,6 @@
     background-size: 15px;
     border: 1px solid var(--bg-dark-10);
     border-radius: 999px;
-    outline: none;
     color: var(--bg-dark-text-95);
     font-size: 0.85rem;
     font-family: inherit;
@@ -153,7 +152,7 @@
     font-size: 0.78rem;
     color: var(--bg-dark-text-70);
     cursor: pointer;
-    transition: all 0.1s;
+    transition: background-color 0.1s, color 0.1s;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;

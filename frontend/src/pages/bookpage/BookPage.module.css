@@ -263,7 +263,6 @@
     font-size: 0.8rem;
     font-family: inherit;
     cursor: pointer;
-    outline: none;
 }
 
 .entry_status option {
@@ -297,7 +296,6 @@
     font-size: 0.85rem;
     padding: 10px 12px;
     resize: none;
-    outline: none;
     line-height: 1.5;
     max-height: 45vh;
     overflow-y: auto;
@@ -338,7 +336,7 @@
     color: var(--bg-dark-text-70);
     font-size: 0.9rem;
     text-decoration: none;
-    transition: all 0.15s;
+    transition: border-color 0.15s, color 0.15s;
 }
 
 .added_link:hover {
